@@ -1,0 +1,1379 @@
+Item sets:
+S0{
+	terminator : • ';'
+	repeatTerminator : • ','
+	type : 'i' 'n' 't' | • 'f' 'l' 'o' 'a' 't'
+	type : • 'i' 'n' 't' | 'f' 'l' 'o' 'a' 't'
+	kwdIf : • 'i' 'f'
+	kwdElse : • 'e' 'l' 's' 'e'
+	kwdWhile : • 'w' 'h' 'i' 'l' 'e'
+	kwdPrint : • 'p' 'r' 'i' 'n' 't'
+	kwdFunc : • 'f' 'u' 'n' 'c'
+	kwdProgram : • 'p' 'r' 'o' 'g' 'r' 'a' 'm'
+	kwdBegin : • 'b' 'e' 'g' 'i' 'n'
+	kwdEnd : • 'e' 'n' 'd'
+	kwdVars : • 'v' 'a' 'r' 's'
+	relOp : '=' '=' | '!' '=' | '<' | • '>'
+	relOp : '=' '=' | '!' '=' | • '<' | '>'
+	relOp : '=' '=' | • '!' '=' | '<' | '>'
+	relOp : • '=' '=' | '!' '=' | '<' | '>'
+	expressionOp : '+' | • '-'
+	expressionOp : • '+' | '-'
+	termOp : '*' | • '/'
+	termOp : • '*' | '/'
+	assignOp : • '='
+	typeAssignOp : • ':'
+	openBrace : • '{'
+	closeBrace : • '}'
+	openParan : • '('
+	closeParan : • ')'
+	id : • _letter {_letter | _decimalDigit}
+	intLit : '0' | •  '1'-'9' {_decimalDigit}
+	intLit : • '0' |  '1'-'9' {_decimalDigit}
+	floatLit : • _decimalDigit '.' _decimals
+	stringLit : _rawStrLit | • _interpretedStrLit
+	stringLit : • _rawStrLit | _interpretedStrLit
+	!comment : _lineComment | • _blockComment
+	!comment : • _lineComment | _blockComment
+	!whitespace : ' ' | '\t' | '\n' | • '\r'
+	!whitespace : ' ' | '\t' | • '\n' | '\r'
+	!whitespace : ' ' | • '\t' | '\n' | '\r'
+	!whitespace : • ' ' | '\t' | '\n' | '\r'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_decimalDigit : •  '0'-'9'
+	_interpretedStrLit : • '"' {. | '\' '"' | _escapeChar} '"'
+	_rawStrLit : • '`' {.} '`'
+	_blockComment : • '/' '*' {. | '*'} '*' '/'
+	_lineComment : • '/' '/' {.} '\n'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['\t','\t'] -> S1
+	['\n','\n'] -> S1
+	['\r','\r'] -> S1
+	[' ',' '] -> S1
+	['!','!'] -> S2
+	['"','"'] -> S3
+	['(','('] -> S4
+	[')',')'] -> S5
+	['*','*'] -> S6
+	['+','+'] -> S7
+	[',',','] -> S8
+	['-','-'] -> S7
+	['/','/'] -> S9
+	['0','0'] -> S10
+	['1','9'] -> S11
+	[':',':'] -> S12
+	[';',';'] -> S13
+	['<','<'] -> S14
+	['=','='] -> S15
+	['>','>'] -> S14
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['`','`'] -> S18
+	['a','a'] -> S16
+	['b','b'] -> S19
+	['c','d'] -> S16
+	['e','e'] -> S20
+	['f','f'] -> S21
+	['g','h'] -> S16
+	['i','i'] -> S22
+	['j','o'] -> S16
+	['p','p'] -> S23
+	['q','u'] -> S16
+	['v','v'] -> S24
+	['w','w'] -> S25
+	['x','z'] -> S16
+	['{','{'] -> S26
+	['}','}'] -> S27
+Action: nil
+Symbols classes: {['\t','\t'], ['\n','\n'], ['\r','\r'], [' ',' '], ['!','!'], ['"','"'], ['(','('], [')',')'], ['*','*'], ['+','+'], [',',','], ['-','-'], ['/','/'], ['0','0'], ['1','9'], [':',':'], [';',';'], ['<','<'], ['=','='], ['>','>'], ['A','Z'], ['_','_'], ['`','`'], ['a','a'], ['b','b'], ['c','d'], ['e','e'], ['f','f'], ['g','h'], ['i','i'], ['j','o'], ['p','p'], ['q','u'], ['v','v'], ['w','w'], ['x','z'], ['{','{'], ['}','}']}
+
+S1{
+	!whitespace : (' ' | '\t' | '\n' | '\r') •
+}
+Transitions:
+Action: Ignore("!whitespace")
+Symbols classes: {}
+
+S2{
+	relOp : '=' '=' | '!' • '=' | '<' | '>'
+}
+Transitions:
+	['=','='] -> S14
+Action: nil
+Symbols classes: {['=','=']}
+
+S3{
+	_interpretedStrLit : '"' {. | '\' '"' | _escapeChar} • '"'
+	_interpretedStrLit : '"' {. | '\' '"' | • _escapeChar} '"'
+	_interpretedStrLit : '"' {. | • '\' '"' | _escapeChar} '"'
+	_interpretedStrLit : '"' {• . | '\' '"' | _escapeChar} '"'
+	stringLit : _rawStrLit | • _interpretedStrLit
+	_escapeChar : '\' 'n' | '\' 'r' | • '\' 't'
+	_escapeChar : '\' 'n' | • '\' 'r' | '\' 't'
+	_escapeChar : • '\' 'n' | '\' 'r' | '\' 't'
+}
+Transitions:
+	['"','"'] -> S28
+	['\','\'] -> S29
+. -> S3
+Action: nil
+Symbols classes: {['"','"'], ['\','\']}
+
+S4{
+	openParan : '(' •
+}
+Transitions:
+Action: Accept("openParan")
+Symbols classes: {}
+
+S5{
+	closeParan : ')' •
+}
+Transitions:
+Action: Accept("closeParan")
+Symbols classes: {}
+
+S6{
+	termOp : ('*' | '/') •
+}
+Transitions:
+Action: Accept("termOp")
+Symbols classes: {}
+
+S7{
+	expressionOp : ('+' | '-') •
+}
+Transitions:
+Action: Accept("expressionOp")
+Symbols classes: {}
+
+S8{
+	repeatTerminator : ',' •
+}
+Transitions:
+Action: Accept("repeatTerminator")
+Symbols classes: {}
+
+S9{
+	termOp : ('*' | '/') •
+	_blockComment : '/' • '*' {. | '*'} '*' '/'
+	_lineComment : '/' • '/' {.} '\n'
+	!comment : _lineComment | • _blockComment
+	!comment : • _lineComment | _blockComment
+}
+Transitions:
+	['*','*'] -> S30
+	['/','/'] -> S31
+Action: Accept("termOp")
+Symbols classes: {['*','*'], ['/','/']}
+
+S10{
+	intLit : ('0' |  '1'-'9' {_decimalDigit}) •
+	_decimalDigit :  '0'-'9' •
+	floatLit : _decimalDigit • '.' _decimals
+}
+Transitions:
+	['.','.'] -> S32
+Action: Accept("intLit")
+Symbols classes: {['.','.']}
+
+S11{
+	intLit : ('0' |  '1'-'9' {_decimalDigit}) •
+	intLit : '0' |  '1'-'9' {• _decimalDigit}
+	_decimalDigit :  '0'-'9' •
+	floatLit : _decimalDigit • '.' _decimals
+	_decimalDigit : •  '0'-'9'
+}
+Transitions:
+	['.','.'] -> S32
+	['0','9'] -> S33
+Action: Accept("intLit")
+Symbols classes: {['.','.'], ['0','9']}
+
+S12{
+	typeAssignOp : ':' •
+}
+Transitions:
+Action: Accept("typeAssignOp")
+Symbols classes: {}
+
+S13{
+	terminator : ';' •
+}
+Transitions:
+Action: Accept("terminator")
+Symbols classes: {}
+
+S14{
+	relOp : ('=' '=' | '!' '=' | '<' | '>') •
+}
+Transitions:
+Action: Accept("relOp")
+Symbols classes: {}
+
+S15{
+	relOp : '=' • '=' | '!' '=' | '<' | '>'
+	assignOp : '=' •
+}
+Transitions:
+	['=','='] -> S14
+Action: Accept("assignOp")
+Symbols classes: {['=','=']}
+
+S16{
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S17{
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S18{
+	_rawStrLit : '`' {.} • '`'
+	_rawStrLit : '`' {• .} '`'
+	stringLit : • _rawStrLit | _interpretedStrLit
+}
+Transitions:
+	['`','`'] -> S35
+. -> S18
+Action: nil
+Symbols classes: {['`','`']}
+
+S19{
+	kwdBegin : 'b' • 'e' 'g' 'i' 'n'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','d'] -> S16
+	['e','e'] -> S36
+	['f','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','d'], ['e','e'], ['f','z']}
+
+S20{
+	kwdElse : 'e' • 'l' 's' 'e'
+	kwdEnd : 'e' • 'n' 'd'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','k'] -> S16
+	['l','l'] -> S37
+	['m','m'] -> S16
+	['n','n'] -> S38
+	['o','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','k'], ['l','l'], ['m','m'], ['n','n'], ['o','z']}
+
+S21{
+	type : 'i' 'n' 't' | 'f' • 'l' 'o' 'a' 't'
+	kwdFunc : 'f' • 'u' 'n' 'c'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','k'] -> S16
+	['l','l'] -> S39
+	['m','t'] -> S16
+	['u','u'] -> S40
+	['v','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','k'], ['l','l'], ['m','t'], ['u','u'], ['v','z']}
+
+S22{
+	type : 'i' • 'n' 't' | 'f' 'l' 'o' 'a' 't'
+	kwdIf : 'i' • 'f'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','e'] -> S16
+	['f','f'] -> S41
+	['g','m'] -> S16
+	['n','n'] -> S42
+	['o','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','e'], ['f','f'], ['g','m'], ['n','n'], ['o','z']}
+
+S23{
+	kwdPrint : 'p' • 'r' 'i' 'n' 't'
+	kwdProgram : 'p' • 'r' 'o' 'g' 'r' 'a' 'm'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','q'] -> S16
+	['r','r'] -> S43
+	['s','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','q'], ['r','r'], ['s','z']}
+
+S24{
+	kwdVars : 'v' • 'a' 'r' 's'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','a'] -> S44
+	['b','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','a'], ['b','z']}
+
+S25{
+	kwdWhile : 'w' • 'h' 'i' 'l' 'e'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','g'] -> S16
+	['h','h'] -> S45
+	['i','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','g'], ['h','h'], ['i','z']}
+
+S26{
+	openBrace : '{' •
+}
+Transitions:
+Action: Accept("openBrace")
+Symbols classes: {}
+
+S27{
+	closeBrace : '}' •
+}
+Transitions:
+Action: Accept("closeBrace")
+Symbols classes: {}
+
+S28{
+	_interpretedStrLit : '"' {. | '\' '"' | _escapeChar} '"' •
+	stringLit : (_rawStrLit | _interpretedStrLit) •
+}
+Transitions:
+Action: Accept("stringLit")
+Symbols classes: {}
+
+S29{
+	_interpretedStrLit : '"' {. | '\' • '"' | _escapeChar} '"'
+	_escapeChar : '\' 'n' | '\' 'r' | '\' • 't'
+	_escapeChar : '\' 'n' | '\' • 'r' | '\' 't'
+	_escapeChar : '\' • 'n' | '\' 'r' | '\' 't'
+	stringLit : _rawStrLit | • _interpretedStrLit
+	_interpretedStrLit : '"' {. | '\' '"' | • _escapeChar} '"'
+}
+Transitions:
+	['"','"'] -> S3
+	['n','n'] -> S46
+	['r','r'] -> S46
+	['t','t'] -> S46
+Action: nil
+Symbols classes: {['"','"'], ['n','n'], ['r','r'], ['t','t']}
+
+S30{
+	_blockComment : '/' '*' {. | '*'} • '*' '/'
+	_blockComment : '/' '*' {. | • '*'} '*' '/'
+	_blockComment : '/' '*' {• . | '*'} '*' '/'
+	!comment : _lineComment | • _blockComment
+}
+Transitions:
+	['*','*'] -> S47
+. -> S30
+Action: nil
+Symbols classes: {['*','*']}
+
+S31{
+	_lineComment : '/' '/' {.} • '\n'
+	_lineComment : '/' '/' {• .} '\n'
+	!comment : • _lineComment | _blockComment
+}
+Transitions:
+	['\n','\n'] -> S48
+. -> S31
+Action: nil
+Symbols classes: {['\n','\n']}
+
+S32{
+	floatLit : _decimalDigit '.' • _decimals
+	_decimals : • _decimalDigit {_decimalDigit}
+	_decimalDigit : •  '0'-'9'
+}
+Transitions:
+	['0','9'] -> S49
+Action: nil
+Symbols classes: {['0','9']}
+
+S33{
+	_decimalDigit :  '0'-'9' •
+	intLit : ('0' |  '1'-'9' {_decimalDigit}) •
+	intLit : '0' |  '1'-'9' {• _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+}
+Transitions:
+	['0','9'] -> S33
+Action: Accept("intLit")
+Symbols classes: {['0','9']}
+
+S34{
+	_decimalDigit :  '0'-'9' •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S35{
+	_rawStrLit : '`' {.} '`' •
+	stringLit : (_rawStrLit | _interpretedStrLit) •
+}
+Transitions:
+Action: Accept("stringLit")
+Symbols classes: {}
+
+S36{
+	kwdBegin : 'b' 'e' • 'g' 'i' 'n'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','f'] -> S16
+	['g','g'] -> S50
+	['h','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','f'], ['g','g'], ['h','z']}
+
+S37{
+	kwdElse : 'e' 'l' • 's' 'e'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','r'] -> S16
+	['s','s'] -> S51
+	['t','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','r'], ['s','s'], ['t','z']}
+
+S38{
+	kwdEnd : 'e' 'n' • 'd'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','c'] -> S16
+	['d','d'] -> S52
+	['e','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','c'], ['d','d'], ['e','z']}
+
+S39{
+	type : 'i' 'n' 't' | 'f' 'l' • 'o' 'a' 't'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','n'] -> S16
+	['o','o'] -> S53
+	['p','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','n'], ['o','o'], ['p','z']}
+
+S40{
+	kwdFunc : 'f' 'u' • 'n' 'c'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','m'] -> S16
+	['n','n'] -> S54
+	['o','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','m'], ['n','n'], ['o','z']}
+
+S41{
+	kwdIf : 'i' 'f' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdIf")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S42{
+	type : 'i' 'n' • 't' | 'f' 'l' 'o' 'a' 't'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','s'] -> S16
+	['t','t'] -> S55
+	['u','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','s'], ['t','t'], ['u','z']}
+
+S43{
+	kwdPrint : 'p' 'r' • 'i' 'n' 't'
+	kwdProgram : 'p' 'r' • 'o' 'g' 'r' 'a' 'm'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','h'] -> S16
+	['i','i'] -> S56
+	['j','n'] -> S16
+	['o','o'] -> S57
+	['p','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','h'], ['i','i'], ['j','n'], ['o','o'], ['p','z']}
+
+S44{
+	kwdVars : 'v' 'a' • 'r' 's'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','q'] -> S16
+	['r','r'] -> S58
+	['s','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','q'], ['r','r'], ['s','z']}
+
+S45{
+	kwdWhile : 'w' 'h' • 'i' 'l' 'e'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','h'] -> S16
+	['i','i'] -> S59
+	['j','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','h'], ['i','i'], ['j','z']}
+
+S46{
+	_escapeChar : ('\' 'n' | '\' 'r' | '\' 't') •
+	_interpretedStrLit : '"' {. | '\' '"' | _escapeChar} • '"'
+	_interpretedStrLit : '"' {. | '\' '"' | • _escapeChar} '"'
+	_interpretedStrLit : '"' {. | • '\' '"' | _escapeChar} '"'
+	_interpretedStrLit : '"' {• . | '\' '"' | _escapeChar} '"'
+	stringLit : _rawStrLit | • _interpretedStrLit
+	_escapeChar : '\' 'n' | '\' 'r' | • '\' 't'
+	_escapeChar : '\' 'n' | • '\' 'r' | '\' 't'
+	_escapeChar : • '\' 'n' | '\' 'r' | '\' 't'
+}
+Transitions:
+	['"','"'] -> S28
+	['\','\'] -> S29
+. -> S3
+Action: nil
+Symbols classes: {['"','"'], ['\','\']}
+
+S47{
+	_blockComment : '/' '*' {. | '*'} '*' • '/'
+	_blockComment : '/' '*' {. | '*'} • '*' '/'
+	_blockComment : '/' '*' {. | • '*'} '*' '/'
+	_blockComment : '/' '*' {• . | '*'} '*' '/'
+	!comment : _lineComment | • _blockComment
+}
+Transitions:
+	['*','*'] -> S47
+	['/','/'] -> S60
+. -> S30
+Action: nil
+Symbols classes: {['*','*'], ['/','/']}
+
+S48{
+	_lineComment : '/' '/' {.} '\n' •
+	!comment : (_lineComment | _blockComment) •
+}
+Transitions:
+Action: Ignore("!comment")
+Symbols classes: {}
+
+S49{
+	_decimalDigit :  '0'-'9' •
+	_decimals : _decimalDigit {_decimalDigit} •
+	_decimals : _decimalDigit {• _decimalDigit}
+	floatLit : _decimalDigit '.' _decimals •
+	floatLit : _decimalDigit '.' • _decimals
+	_decimalDigit : •  '0'-'9'
+}
+Transitions:
+	['0','9'] -> S49
+Action: Accept("floatLit")
+Symbols classes: {['0','9']}
+
+S50{
+	kwdBegin : 'b' 'e' 'g' • 'i' 'n'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','h'] -> S16
+	['i','i'] -> S61
+	['j','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','h'], ['i','i'], ['j','z']}
+
+S51{
+	kwdElse : 'e' 'l' 's' • 'e'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','d'] -> S16
+	['e','e'] -> S62
+	['f','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','d'], ['e','e'], ['f','z']}
+
+S52{
+	kwdEnd : 'e' 'n' 'd' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdEnd")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S53{
+	type : 'i' 'n' 't' | 'f' 'l' 'o' • 'a' 't'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','a'] -> S63
+	['b','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','a'], ['b','z']}
+
+S54{
+	kwdFunc : 'f' 'u' 'n' • 'c'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','b'] -> S16
+	['c','c'] -> S64
+	['d','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','b'], ['c','c'], ['d','z']}
+
+S55{
+	type : ('i' 'n' 't' | 'f' 'l' 'o' 'a' 't') •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("type")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S56{
+	kwdPrint : 'p' 'r' 'i' • 'n' 't'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','m'] -> S16
+	['n','n'] -> S65
+	['o','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','m'], ['n','n'], ['o','z']}
+
+S57{
+	kwdProgram : 'p' 'r' 'o' • 'g' 'r' 'a' 'm'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','f'] -> S16
+	['g','g'] -> S66
+	['h','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','f'], ['g','g'], ['h','z']}
+
+S58{
+	kwdVars : 'v' 'a' 'r' • 's'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','r'] -> S16
+	['s','s'] -> S67
+	['t','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','r'], ['s','s'], ['t','z']}
+
+S59{
+	kwdWhile : 'w' 'h' 'i' • 'l' 'e'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','k'] -> S16
+	['l','l'] -> S68
+	['m','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','k'], ['l','l'], ['m','z']}
+
+S60{
+	_blockComment : '/' '*' {. | '*'} '*' '/' •
+	!comment : (_lineComment | _blockComment) •
+}
+Transitions:
+Action: Ignore("!comment")
+Symbols classes: {}
+
+S61{
+	kwdBegin : 'b' 'e' 'g' 'i' • 'n'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','m'] -> S16
+	['n','n'] -> S69
+	['o','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','m'], ['n','n'], ['o','z']}
+
+S62{
+	kwdElse : 'e' 'l' 's' 'e' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdElse")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S63{
+	type : 'i' 'n' 't' | 'f' 'l' 'o' 'a' • 't'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','s'] -> S16
+	['t','t'] -> S55
+	['u','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','s'], ['t','t'], ['u','z']}
+
+S64{
+	kwdFunc : 'f' 'u' 'n' 'c' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdFunc")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S65{
+	kwdPrint : 'p' 'r' 'i' 'n' • 't'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','s'] -> S16
+	['t','t'] -> S70
+	['u','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','s'], ['t','t'], ['u','z']}
+
+S66{
+	kwdProgram : 'p' 'r' 'o' 'g' • 'r' 'a' 'm'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','q'] -> S16
+	['r','r'] -> S71
+	['s','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','q'], ['r','r'], ['s','z']}
+
+S67{
+	kwdVars : 'v' 'a' 'r' 's' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdVars")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S68{
+	kwdWhile : 'w' 'h' 'i' 'l' • 'e'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','d'] -> S16
+	['e','e'] -> S72
+	['f','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','d'], ['e','e'], ['f','z']}
+
+S69{
+	kwdBegin : 'b' 'e' 'g' 'i' 'n' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdBegin")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S70{
+	kwdPrint : 'p' 'r' 'i' 'n' 't' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdPrint")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S71{
+	kwdProgram : 'p' 'r' 'o' 'g' 'r' • 'a' 'm'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','a'] -> S73
+	['b','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','a'], ['b','z']}
+
+S72{
+	kwdWhile : 'w' 'h' 'i' 'l' 'e' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdWhile")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+
+S73{
+	kwdProgram : 'p' 'r' 'o' 'g' 'r' 'a' • 'm'
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','l'] -> S16
+	['m','m'] -> S74
+	['n','z'] -> S16
+Action: Accept("id")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','l'], ['m','m'], ['n','z']}
+
+S74{
+	kwdProgram : 'p' 'r' 'o' 'g' 'r' 'a' 'm' •
+	_asciiLetter : ( 'a'-'z' |  'A'-'Z') •
+	_letter : (_asciiLetter | '_') •
+	id : _letter {_letter | _decimalDigit} •
+	id : _letter {_letter | • _decimalDigit}
+	id : _letter {• _letter | _decimalDigit}
+	_decimalDigit : •  '0'-'9'
+	_letter : _asciiLetter | • '_'
+	_letter : • _asciiLetter | '_'
+	_asciiLetter :  'a'-'z' | •  'A'-'Z'
+	_asciiLetter : •  'a'-'z' |  'A'-'Z'
+}
+Transitions:
+	['0','9'] -> S34
+	['A','Z'] -> S16
+	['_','_'] -> S17
+	['a','z'] -> S16
+Action: Accept("kwdProgram")
+Symbols classes: {['0','9'], ['A','Z'], ['_','_'], ['a','z']}
+

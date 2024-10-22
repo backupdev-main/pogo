@@ -1,0 +1,172 @@
+// === [ Lexical part] =========================================================
+terminator : ';' ;
+repeatTerminator : ',';
+// --- [ Types ] ---------------------------------------------------------------
+type : 'i' 'n' 't' | 'f' 'l' 'o' 'a' 't' ;
+
+// --- [ Pre-defined KeyWords ] ---------------------------------------------------------------
+kwdIf      : 'i' 'f';
+kwdElse    : 'e' 'l' 's' 'e';
+kwdWhile   : 'w' 'h' 'i' 'l' 'e';
+kwdPrint   : 'p' 'r' 'i' 'n' 't';
+kwdFunc    : 'f' 'u' 'n' 'c';
+kwdProgram : 'p' 'r' 'o' 'g' 'r' 'a' 'm' ;
+kwdBegin   : 'b' 'e' 'g' 'i' 'n' ;
+kwdEnd     : 'e' 'n' 'd' ;
+kwdVars    : 'v' 'a' 'r' ;
+
+// --- [ Operators ] -----------------------------------------------------------
+relOp                  : '=' '=' | '!' '=' | '<' | '>' ;
+expressionOp           : '+' | '-' ;
+termOp                 : '*' | '/' ;
+assignOp               : '=' ;
+typeAssignOp           : ':' ;
+openBrace              : '{';
+closeBrace             : '}';
+openParan              : '(';
+closeParan             : ')';
+
+// --- [ Identifiers ] ---------------------------------------------------------
+_asciiLetter : 'a' - 'z' | 'A' - 'Z' ;
+_letter : _asciiLetter | '_' ;
+_decimalDigit : '0' - '9' ;
+id : _letter { _letter | _decimalDigit } ;
+
+// --- [ Literals ] ---------------------------------------------------------
+intLit             : '0' | '1' - '9' { _decimalDigit} ;
+floatLit           : _decimalDigit '.' _decimals ;
+_decimals          : _decimalDigit {_decimalDigit} ;
+stringLit          :  _rawStrLit | _interpretedStrLit ;
+_rawStrLit         : '`' { . } '`' ;
+_escapeChar : '\\' 'n' | '\\' 'r' | '\\' 't' ;
+_interpretedStrLit : '"' { . | '\\' '"' | _escapeChar } '"' ;
+
+// --- [ Suppressed ] ---------------------------------------------------------
+!comment      : _lineComment | _blockComment ;
+!whitespace   : ' ' | '\t' | '\n' | '\r' ;
+_lineComment  : '/' '/' {.} '\n' ;
+_blockComment : '/' '*' {. | '*'} '*' '/' ;
+
+// === [ Syntax part] =========================================================
+Program
+    : ProgramName VarDeclarationSection FunctionListOpt MainSection
+    ;
+
+ProgramName
+    : kwdProgram id terminator
+    ;
+
+VarDeclarationSection
+    : VarDeclaration
+    | empty
+    ;
+
+VarDeclaration
+    : kwdVars VarList typeAssignOp type terminator
+    ;
+
+VarList
+    : id
+    | VarList repeatTerminator id
+    ;
+
+FunctionListOpt
+    : FunctionList
+    | empty
+    ;
+
+FunctionList
+    : Function
+    | FunctionList Function
+    ;
+
+Function
+    : kwdFunc id openParan ParameterList closeParan Block terminator
+    ;
+
+Block
+    : openBrace StatementList closeBrace
+    ;
+
+ParameterList
+    : Parameter
+    | ParameterList repeatTerminator Parameter
+    | empty
+    ;
+
+Parameter
+    : id typeAssignOp type
+    ;
+
+MainSection
+    : kwdBegin StatementList kwdEnd
+    ;
+
+StatementList
+    : Statement
+    | StatementList Statement
+    ;
+
+Statement
+    : IfStatement terminator
+    | PrintStatement terminator
+    | Assignment terminator
+    | FunctionCall terminator
+    | WhileStatement terminator
+    ;
+
+IfStatement
+    : kwdIf openParan Condition closeParan Block
+    | kwdIf openParan Condition closeParan Block kwdElse Block
+    ;
+
+WhileStatement
+    : kwdWhile openParan Condition closeParan Block
+    ;
+
+PrintStatement
+    : kwdPrint openParan ExpressionList closeParan
+    ;
+
+Condition
+    : Expression relOp Expression << func () (Attrib, error) {
+                                     fmt.Println(string($0.(*token.Token).Lit), string($1.(*token.Token).Lit), string($2.(*token.Token).Lit));
+                                     return nil, nil}() >>
+    ;
+
+ExpressionList
+    : Expression
+    | ExpressionList repeatTerminator Expression
+    ;
+
+Assignment
+    : id assignOp Expression
+    ;
+
+FunctionCall
+    : id openParan ArgumentList closeParan
+    ;
+
+ArgumentList
+    : Expression
+    | ArgumentList repeatTerminator Expression
+    | empty
+    ;
+
+Expression
+    : Term
+    | Expression expressionOp Term
+    ;
+
+Term
+    : Factor
+    | Term termOp Factor
+    ;
+
+Factor
+    : id
+    | intLit
+    | floatLit
+    | stringLit
+    | openParan Expression closeParan
+    ;

@@ -256,6 +256,7 @@ func (p *Parser) parseBlock() error {
 	return p.expect(token.TokMap.Type("closeBrace"))
 }
 
+// Parsing Statements
 func (p *Parser) parseStatementList() error {
 	validStatementStart, err := p.isStatementStart()
 
@@ -281,14 +282,46 @@ func (p *Parser) parseStatement() error {
 	case token.TokMap.Type("kwdIf"):
 		return p.parseIfStatement()
 	case token.TokMap.Type("kwdWhile"):
-		return nil
+		return p.parseWhileStatement()
 	case token.TokMap.Type("kwdPrint"):
 		return nil
 	case token.TokMap.Type("id"):
-		return nil
+		return p.parseAssignment()
 	}
 
 	return nil
+}
+
+func (p *Parser) parseAssignment() error {
+	if err := p.expect(token.TokMap.Type("id")); err != nil {
+		return err
+	}
+
+	if err := p.expect(token.TokMap.Type("typeAssignOp")); err != nil {
+		return err
+	}
+
+	return p.parseExpression()
+}
+
+func (p *Parser) parseWhileStatement() error {
+	if err := p.expect(token.TokMap.Type("kwdWhile")); err != nil {
+		return err
+	}
+
+	if err := p.expect(token.TokMap.Type("openParan")); err != nil {
+		return err
+	}
+
+	if err := p.parseExpression(); err != nil {
+		return err
+	}
+
+	if err := p.expect(token.TokMap.Type("closeParan")); err != nil {
+		return err
+	}
+
+	return p.parseBlock()
 }
 
 func (p *Parser) parseIfStatement() error {
@@ -318,6 +351,46 @@ func (p *Parser) parseIfStatement() error {
 	}
 
 	return nil
+}
+
+func (p *Parser) parsePrintStatement() error {
+	if err := p.expect(token.TokMap.Type("kwdPrint")); err != nil {
+		return err
+	}
+
+	if err := p.expect(token.TokMap.Type("openParan")); err != nil {
+		return err
+	}
+
+	if err := p.parsePrintList(); err != nil {
+		return err
+	}
+
+	return p.expect(token.TokMap.Type("closeParan"))
+}
+
+func (p *Parser) parsePrintList() error {
+	if err := p.parsePrintItem(); err != nil {
+		return err
+	}
+
+	for p.curr.Type == token.TokMap.Type("repeatTerminator") {
+		p.next() // consume separator
+		if err := p.parsePrintItem(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *Parser) parsePrintItem() error {
+	if p.curr.Type == token.TokMap.Type("stringLit") {
+		p.next()
+		return nil
+	}
+
+	return p.parseExpression()
 }
 
 func (p *Parser) parseExpression() error {

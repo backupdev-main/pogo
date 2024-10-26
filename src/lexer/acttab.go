@@ -45,11 +45,11 @@ var ActTab = ActionTable{
 		Ignore: "",
 	},
 	ActionRow{ // S6
-		Accept: 24,
+		Accept: 25,
 		Ignore: "",
 	},
 	ActionRow{ // S7
-		Accept: 23,
+		Accept: 24,
 		Ignore: "",
 	},
 	ActionRow{ // S8
@@ -57,15 +57,15 @@ var ActTab = ActionTable{
 		Ignore: "",
 	},
 	ActionRow{ // S9
-		Accept: 24,
+		Accept: 25,
 		Ignore: "",
 	},
 	ActionRow{ // S10
-		Accept: 25,
+		Accept: 26,
 		Ignore: "",
 	},
 	ActionRow{ // S11
-		Accept: 25,
+		Accept: 26,
 		Ignore: "",
 	},
 	ActionRow{ // S12
@@ -77,7 +77,7 @@ var ActTab = ActionTable{
 		Ignore: "",
 	},
 	ActionRow{ // S14
-		Accept: 21,
+		Accept: 23,
 		Ignore: "",
 	},
 	ActionRow{ // S15
@@ -133,7 +133,7 @@ var ActTab = ActionTable{
 		Ignore: "",
 	},
 	ActionRow{ // S28
-		Accept: 27,
+		Accept: 21,
 		Ignore: "",
 	},
 	ActionRow{ // S29
@@ -153,7 +153,7 @@ var ActTab = ActionTable{
 		Ignore: "",
 	},
 	ActionRow{ // S33
-		Accept: 25,
+		Accept: 26,
 		Ignore: "",
 	},
 	ActionRow{ // S34
@@ -161,7 +161,7 @@ var ActTab = ActionTable{
 		Ignore: "",
 	},
 	ActionRow{ // S35
-		Accept: 27,
+		Accept: 21,
 		Ignore: "",
 	},
 	ActionRow{ // S36
@@ -217,7 +217,7 @@ var ActTab = ActionTable{
 		Ignore: "!comment",
 	},
 	ActionRow{ // S49
-		Accept: 26,
+		Accept: 27,
 		Ignore: "",
 	},
 	ActionRow{ // S50
@@ -253,7 +253,7 @@ var ActTab = ActionTable{
 		Ignore: "",
 	},
 	ActionRow{ // S58
-		Accept: 3,
+		Accept: 6,
 		Ignore: "",
 	},
 	ActionRow{ // S59
@@ -289,34 +289,30 @@ var ActTab = ActionTable{
 		Ignore: "",
 	},
 	ActionRow{ // S67
-		Accept: 6,
+		Accept: 3,
 		Ignore: "",
 	},
 	ActionRow{ // S68
-		Accept: 3,
-		Ignore: "",
-	},
-	ActionRow{ // S69
 		Accept: 15,
 		Ignore: "",
 	},
-	ActionRow{ // S70
+	ActionRow{ // S69
 		Accept: 20,
 		Ignore: "",
 	},
-	ActionRow{ // S71
+	ActionRow{ // S70
 		Accept: 3,
 		Ignore: "",
 	},
-	ActionRow{ // S72
+	ActionRow{ // S71
 		Accept: 19,
 		Ignore: "",
 	},
-	ActionRow{ // S73
+	ActionRow{ // S72
 		Accept: 3,
 		Ignore: "",
 	},
-	ActionRow{ // S74
+	ActionRow{ // S73
 		Accept: 2,
 		Ignore: "",
 	},

@@ -57,8 +57,8 @@ ProgramName
     ;
 
 VarDeclarationSection
-    : VarDeclaration
-    | empty
+    : empty
+    | VarDeclaration VarDeclarationSection
     ;
 
 VarDeclaration
@@ -108,35 +108,42 @@ StatementList
     ;
 
 Statement
-    : IfStatement terminator
+    : IfStatement
     | PrintStatement terminator
     | Assignment terminator
     | FunctionCall terminator
-    | WhileStatement terminator
+    | WhileStatement
     ;
 
 IfStatement
-    : kwdIf openParan Condition closeParan Block
-    | kwdIf openParan Condition closeParan Block kwdElse Block
+    : SimpleIfStatement
+    | IfElseStatement
+    ;
+
+SimpleIfStatement
+    : kwdIf openParan Expression closeParan Block
+    ;
+
+IfElseStatement
+    : kwdIf openParan Expression closeParan Block kwdElse Block
     ;
 
 WhileStatement
-    : kwdWhile openParan Condition closeParan Block
+    : kwdWhile openParan Expression closeParan Block
     ;
 
 PrintStatement
-    : kwdPrint openParan ExpressionList closeParan
+    : kwdPrint openParan PrintList closeParan
     ;
 
-Condition
-    : Expression relOp Expression << func () (Attrib, error) {
-                                     fmt.Println(string($0.(*token.Token).Lit), string($1.(*token.Token).Lit), string($2.(*token.Token).Lit));
-                                     return nil, nil}() >>
+PrintList
+    : PrintItem
+    | PrintList repeatTerminator PrintItem
     ;
 
-ExpressionList
+PrintItem
     : Expression
-    | ExpressionList repeatTerminator Expression
+    | stringLit
     ;
 
 Assignment
@@ -154,8 +161,13 @@ ArgumentList
     ;
 
 Expression
+    : Exp
+    | Exp relOp Exp
+    ;
+
+Exp
     : Term
-    | Expression expressionOp Term
+    | Term expressionOp Exp
     ;
 
 Term
@@ -164,9 +176,11 @@ Term
     ;
 
 Factor
-    : id
+    : openParan Expression closeParan
+    | expressionOp id
+    | expressionOp intLit
+    | expressionOp floatLit
+    | id
     | intLit
     | floatLit
-    | stringLit
-    | openParan Expression closeParan
     ;

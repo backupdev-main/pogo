@@ -1,5 +1,5 @@
 program MyProgram;
-vars x : int;
+var x : int;
 begin
   print(5);
 end

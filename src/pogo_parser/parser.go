@@ -32,7 +32,8 @@ func (p *Parser) error(msg string) error {
 }
 
 func (p *Parser) expect(typ token.Type) error {
-	// fmt.Println("Processing token", string(p.curr.Lit), "as ", token.TokMap.Id(typ))
+	//fmt.Println("Processing token", string(p.curr.Lit), "as ", token.TokMap.Id(typ))
+	// fmt.Println("This is the context", p.lexer.s)
 	if p.curr.Type != typ {
 		return p.error(fmt.Sprintf("expected %v, got %v", token.TokMap.Id(typ), token.TokMap.Id(p.curr.Type)))
 	}
@@ -53,9 +54,9 @@ func (p *Parser) ParseProgram() error {
 		return err
 	}
 
-	//if err := p.parseMainSection(); err != nil {
-	//	return err
-	//}
+	if err := p.parseMainSection(); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -258,26 +259,34 @@ func (p *Parser) parseBlock() error {
 
 // Parsing Statements
 func (p *Parser) parseStatementList() error {
+	for {
+		validStatementStart, err := p.isStatementStart()
+		if err != nil {
+			return err
+		}
+
+		if !validStatementStart {
+			break // No more statements to parse
+		}
+
+		if err := p.parseStatement(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Parser) parseStatement() error {
 	validStatementStart, err := p.isStatementStart()
+
+	if !validStatementStart {
+		return nil
+	}
 
 	if err != nil {
 		return err
 	}
 
-	if !validStatementStart {
-		return fmt.Errorf("expected statement, got %v", p.curr.Type)
-	}
-
-	for validStatementStart {
-		if err := p.parseStatement(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (p *Parser) parseStatement() error {
 	switch p.curr.Type {
 	case token.TokMap.Type("kwdIf"):
 		return p.parseIfStatement()
@@ -286,22 +295,35 @@ func (p *Parser) parseStatement() error {
 	case token.TokMap.Type("kwdPrint"):
 		return nil
 	case token.TokMap.Type("id"):
-		return p.parseAssignment()
+		// Functionality of fucntion calls to be added
+		idToken := p.curr
+		p.next()
+		nextToken := p.curr
+		if nextToken.Type == token.TokMap.Type("openParen") {
+			return p.parseFunctionCall(idToken)
+		} else if nextToken.Type == token.TokMap.Type("assignOp") {
+			return p.parseAssignment(idToken, nextToken)
+		} else {
+			return fmt.Errorf("Expected either = or (, got %v at line %d, column %d", token.TokMap.Id(nextToken.Type), nextToken.Line, nextToken.Column)
+		}
 	}
-
 	return nil
 }
 
-func (p *Parser) parseAssignment() error {
-	if err := p.expect(token.TokMap.Type("id")); err != nil {
+func (p *Parser) parseAssignment(id, nextToken *token.Token) error {
+	if nextToken.Type != token.TokMap.Type("assignOp") {
+		return fmt.Errorf("Expected =, got %v at line %d, column %d", nextToken.Type, nextToken.Line, nextToken.Column)
+	}
+	p.next()
+	if err := p.parseExpression(); err != nil {
 		return err
 	}
 
-	if err := p.expect(token.TokMap.Type("typeAssignOp")); err != nil {
+	if err := p.expect(token.TokMap.Type("terminator")); err != nil {
 		return err
 	}
 
-	return p.parseExpression()
+	return nil
 }
 
 func (p *Parser) parseWhileStatement() error {
@@ -367,6 +389,41 @@ func (p *Parser) parsePrintStatement() error {
 	}
 
 	return p.expect(token.TokMap.Type("closeParan"))
+}
+
+func (p *Parser) parseFunctionCall(id *token.Token) error {
+	// Still not ready
+	if err := p.expect(token.TokMap.Type("openParan")); err != nil {
+		return err
+	}
+
+	if err := p.parseArgumentList(); err != nil {
+		return err
+	}
+
+	if err := p.expect(token.TokMap.Type("closeParan")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Parser) parseArgumentList() error {
+	if p.curr.Type == token.TokMap.Type("closeParan") {
+		return nil
+	}
+
+	if err := p.parseExpression(); err != nil {
+		return err
+	}
+
+	for p.curr.Type == token.TokMap.Type("repeatTerminator") {
+		p.next()
+		if err := p.parseExpression(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *Parser) parsePrintList() error {
@@ -454,8 +511,24 @@ func (p *Parser) parseFactor() error {
 		return nil
 
 	default:
-		return fmt.Errorf("unexpected token in factor: %v", p.curr.Type)
+		return fmt.Errorf("unexpected token in factor: %v", token.TokMap.Id(p.curr.Type))
 	}
+}
+
+func (p *Parser) parseMainSection() error {
+	if err := p.expect(token.TokMap.Type("kwdBegin")); err != nil {
+		return err
+	}
+
+	if err := p.parseStatementList(); err != nil {
+		return err
+	}
+
+	if err := p.expect(token.TokMap.Type("kwdEnd")); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Util functions

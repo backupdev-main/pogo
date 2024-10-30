@@ -1,4 +1,4 @@
-# Pogo Parser
+# Pogo Compiler
 <p align="center">
   <img src="/pogologo.png" width="400" style="display: block; margin: 0 auto;" alt="logo">
 </p>

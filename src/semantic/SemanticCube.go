@@ -10,35 +10,40 @@ func NewSemanticCube() *SemanticCube {
 		cube: make(map[Type]map[Type]map[string]Type),
 	}
 
-	// Initialize the cube for numeric types only
+	// Initialize semantic cube
 	for _, t1 := range []Type{TypeInt, TypeFloat} {
 		cube.cube[t1] = make(map[Type]map[string]Type)
 		for _, t2 := range []Type{TypeInt, TypeFloat} {
 			cube.cube[t1][t2] = make(map[string]Type)
-
-			// Arithmetic operators (+, -, *, /)
-			for _, op := range []string{"+", "-", "*", "/"} {
-				if t1 == TypeInt && t2 == TypeInt {
-					cube.cube[t1][t2][op] = TypeInt
-				} else {
-					cube.cube[t1][t2][op] = TypeFloat
-				}
-			}
-
-			// Relational operators (<, >, <=, >=, ==, !=)
-			for _, op := range []string{"<", ">", "<=", ">=", "==", "!="} {
-				cube.cube[t1][t2][op] = TypeInt // Using int as boolean (0/1)
-			}
-
-			if t1 == t2 {
-				cube.cube[t1][t2]["="] = t1
-			} else if t1 == TypeFloat && t2 == TypeInt {
-				cube.cube[t1][t2]["="] = TypeFloat
-			} else {
-				cube.cube[t1][t2]["="] = TypeError
-			}
 		}
 	}
+
+	// Handle arithmetic operators
+	arithOps := []string{"+", "-", "*", "/"}
+	for _, op := range arithOps {
+		// Int operations
+		cube.cube[TypeInt][TypeInt][op] = TypeInt
+		if op == "/" {
+			cube.cube[TypeInt][TypeInt][op] = TypeFloat
+		}
+		cube.cube[TypeInt][TypeFloat][op] = TypeFloat
+
+		cube.cube[TypeFloat][TypeInt][op] = TypeFloat
+		cube.cube[TypeFloat][TypeFloat][op] = TypeFloat
+	}
+
+	relOps := []string{"<", ">", "==", "!=", "<=", ">="}
+	for _, op := range relOps {
+		cube.cube[TypeInt][TypeInt][op] = TypeInt
+		cube.cube[TypeInt][TypeFloat][op] = TypeInt
+		cube.cube[TypeFloat][TypeInt][op] = TypeInt
+		cube.cube[TypeFloat][TypeFloat][op] = TypeInt
+	}
+
+	cube.cube[TypeFloat][TypeInt]["="] = TypeFloat
+	cube.cube[TypeFloat][TypeFloat]["="] = TypeFloat
+	cube.cube[TypeInt][TypeInt]["="] = TypeInt
+	cube.cube[TypeInt][TypeFloat]["="] = TypeError
 
 	return cube
 }

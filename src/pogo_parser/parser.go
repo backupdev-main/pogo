@@ -13,39 +13,20 @@ const (
 )
 
 type Parser struct {
-	lexer        *lexer.Lexer
-	curr         *token.Token
-	symbolTable  *semantic.SymbolTable
-	semanticCube *semantic.SemanticCube
+	lexer         *lexer.Lexer
+	curr          *token.Token
+	symbolTable   *semantic.SymbolTable
+	codeGenerator *semantic.QuadrupleList
 }
 
 func NewParser(l *lexer.Lexer) *Parser {
 	p := &Parser{
-		lexer:        l,
-		symbolTable:  semantic.NewSymbolTable(),
-		semanticCube: semantic.NewSemanticCube(),
+		lexer:         l,
+		symbolTable:   semantic.NewSymbolTable(),
+		codeGenerator: semantic.NewQuadrupleList(),
 	}
 	p.next() // prime first token
 	return p
-}
-
-func (p *Parser) next() {
-	p.curr = p.lexer.Scan()
-}
-
-// This is a basic error handling method for our parser
-func (p *Parser) error(msg string) error {
-	return fmt.Errorf("line %d: %s", p.curr.Line, msg)
-}
-
-func (p *Parser) expect(typ token.Type) error {
-	//fmt.Println("Processing token", string(p.curr.Lit), "as ", token.TokMap.Id(typ))
-	// fmt.Println("This is the context", p.lexer.s)
-	if p.curr.Type != typ {
-		return p.error(fmt.Sprintf("expected %v, got %v", token.TokMap.Id(typ), token.TokMap.Id(p.curr.Type)))
-	}
-	p.next()
-	return nil
 }
 
 func (p *Parser) ParseProgram() error {
@@ -53,7 +34,7 @@ func (p *Parser) ParseProgram() error {
 		return err
 	}
 
-	if err := p.parseVarDeclarationSection(); err != nil {
+	if err := p.parseVarDeclarationSection(false); err != nil {
 		return err
 	}
 
@@ -64,6 +45,8 @@ func (p *Parser) ParseProgram() error {
 	if err := p.parseMainSection(); err != nil {
 		return err
 	}
+	p.codeGenerator.Print()
+	p.codeGenerator.PrintStacks()
 
 	return nil
 }
@@ -78,18 +61,16 @@ func (p *Parser) parseProgramName() error {
 	return p.expect(token.TokMap.Type("terminator"))
 }
 
-func (p *Parser) parseVarDeclarationSection() error {
+func (p *Parser) parseVarDeclarationSection(isFunction bool) error {
 	if p.curr.Type != token.TokMap.Type("kwdVars") {
-		if p.curr.Type != token.TokMap.Type("kwdFunc") &&
-			p.curr.Type != token.TokMap.Type("kwdBegin") {
-			return fmt.Errorf("line %d: unexpected token '%s', expected 'var', 'func', or 'begin'",
-				p.curr.Line, p.curr.Lit)
+		if p.curr.Type != token.TokMap.Type("kwdFunc") && p.curr.Type != token.TokMap.Type("kwdBegin") && !isFunction {
+			return fmt.Errorf("line %d: unexpected token '%s', expected 'var', 'func', or 'begin'", p.curr.Line, p.curr.Lit)
 		}
 		return nil
 	}
 
 	for p.curr.Type == token.TokMap.Type("kwdVars") {
-		if err := p.parseVarDeclaration(); err != nil {
+		if err := p.parseVarDeclaration(isFunction); err != nil {
 			return err
 		}
 	}
@@ -97,7 +78,7 @@ func (p *Parser) parseVarDeclarationSection() error {
 	return nil
 }
 
-func (p *Parser) parseVarDeclaration() error {
+func (p *Parser) parseVarDeclaration(isFunction bool) error {
 	if err := p.expect(token.TokMap.Type("kwdVars")); err != nil {
 		return err
 	}
@@ -112,7 +93,7 @@ func (p *Parser) parseVarDeclaration() error {
 		return err
 	}
 
-	return p.parseVarDeclarationSection()
+	return p.parseVarDeclarationSection(isFunction)
 }
 
 func (p *Parser) parseVarList() error {
@@ -195,6 +176,7 @@ func (p *Parser) parseFunctionList() error {
 }
 
 func (p *Parser) parseFunction() error {
+
 	if err := p.expect(token.TokMap.Type("kwdFunc")); err != nil {
 		return err
 	}
@@ -214,12 +196,15 @@ func (p *Parser) parseFunction() error {
 	} else if err := p.symbolTable.AddFunction(string(functionId), params, p.curr.Line, p.curr.Column); err != nil {
 		return err
 	}
+	if err := p.symbolTable.EnterFunctionScope(string(functionId)); err != nil {
+		return err
+	}
 
 	if err := p.expect(token.TokMap.Type("closeParan")); err != nil {
 		return err
 	}
 
-	if err := p.parseBlock(); err != nil {
+	if err := p.parseFunctionBlock(); err != nil {
 		return err
 	}
 
@@ -227,6 +212,7 @@ func (p *Parser) parseFunction() error {
 		return err
 	}
 
+	p.symbolTable.ExitFunctionScope()
 	return p.parseFunctionList()
 }
 
@@ -242,7 +228,6 @@ func (p *Parser) parseParameterList() ([]semantic.Variable, error) {
 		return []semantic.Variable{}, err
 	}
 	semType, err := p.returnSemanticType(currType)
-
 	currentParams = append(currentParams, semantic.Variable{
 		Name:   string(currId.Lit),
 		Type:   semType,
@@ -308,6 +293,22 @@ func (p *Parser) parseBlock() error {
 	return p.expect(token.TokMap.Type("closeBrace"))
 }
 
+func (p *Parser) parseFunctionBlock() error {
+	if err := p.expect(token.TokMap.Type("openBrace")); err != nil {
+		return err
+	}
+
+	if err := p.parseVarDeclarationSection(true); err != nil {
+		return err
+	}
+
+	if err := p.parseStatementList(); err != nil {
+		return err
+	}
+
+	return p.expect(token.TokMap.Type("closeBrace"))
+}
+
 // Parsing Statements
 func (p *Parser) parseStatementList() error {
 	for {
@@ -352,9 +353,6 @@ func (p *Parser) parseStatement() error {
 		p.next()
 		nextToken := p.curr
 		if nextToken.Type == token.TokMap.Type("openParan") {
-			if err := p.symbolTable.ValidateFunctionCall(string(idToken.Lit), idToken.Line); err != nil {
-				return err
-			}
 			return p.parseFunctionCall(idToken)
 		} else if nextToken.Type == token.TokMap.Type("assignOp") {
 			if err := p.symbolTable.ValidateVarAssignment(string(idToken.Lit), idToken.Line); err != nil {
@@ -374,24 +372,17 @@ func (p *Parser) parseAssignment(id, nextToken *token.Token) error {
 	}
 	p.next()
 
-	exprType, err := p.parseExpression()
-	varType, err := p.symbolTable.GetType(string(id.Lit))
-
+	_, err := p.parseExpression()
+	currType, err := p.symbolTable.GetType(string(id.Lit))
+	fmt.Println("This is the type", currType, string(id.Lit))
+	p.symbolTable.PrettyPrint()
 	if err != nil {
 		return err
 	}
 	// fmt.Println("The expression type is ", exprType, "and the tok", string(id.Lit))
-
-	resultType := p.semanticCube.GetResultType(varType, exprType, "=")
-	if resultType == semantic.TypeError {
-		return fmt.Errorf("line %d: cannot assign value of type %v to variable '%s' of type %v",
-			id.Line, exprType, id.Lit, varType)
-	}
-
-	if err != nil {
+	if err := p.codeGenerator.HandleAssignment(string(id.Lit), currType); err != nil {
 		return err
 	}
-
 	if err := p.expect(token.TokMap.Type("terminator")); err != nil {
 		return err
 	}
@@ -404,6 +395,8 @@ func (p *Parser) parseWhileStatement() error {
 		return err
 	}
 
+	startIndex := p.codeGenerator.HandleWhileStart()
+
 	if err := p.expect(token.TokMap.Type("openParan")); err != nil {
 		return err
 	}
@@ -413,11 +406,24 @@ func (p *Parser) parseWhileStatement() error {
 		return err
 	}
 
+	// QUADS
+	if err := p.codeGenerator.HandleWhileCondition(); err != nil {
+		return err
+	}
+
 	if err := p.expect(token.TokMap.Type("closeParan")); err != nil {
 		return err
 	}
 
-	return p.parseBlock()
+	if err := p.parseBlock(); err != nil {
+		return err
+	}
+
+	if err := p.codeGenerator.HandleWhileEnd(startIndex); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Parser) parseIfStatement() error {
@@ -438,13 +444,34 @@ func (p *Parser) parseIfStatement() error {
 		return err
 	}
 
+	// QUADS
+	if err := p.codeGenerator.HandleIfStatement(); err != nil {
+		return err
+	}
+
 	if err := p.parseBlock(); err != nil {
 		return err
 	}
 
 	if p.curr.Type == token.TokMap.Type("kwdElse") {
 		p.next()
-		return p.parseBlock()
+		if err := p.codeGenerator.HandleElse(); err != nil {
+			return err
+		}
+
+		if err := p.parseBlock(); err != nil {
+			return err
+		}
+
+		if err := p.codeGenerator.HandleEndIf(); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err := p.codeGenerator.HandleEndIf(); err != nil {
+		return err
 	}
 
 	return nil
@@ -467,12 +494,15 @@ func (p *Parser) parsePrintStatement() error {
 }
 
 func (p *Parser) parseFunctionCall(id *token.Token) error {
-	// Still not ready
+
 	if err := p.expect(token.TokMap.Type("openParan")); err != nil {
 		return err
 	}
 
-	if err := p.parseArgumentList(); err != nil {
+	// Logic to verify with symbol table pending
+	arguments, err := p.parseArgumentList()
+
+	if err != nil {
 		return err
 	}
 
@@ -480,27 +510,35 @@ func (p *Parser) parseFunctionCall(id *token.Token) error {
 		return err
 	}
 
-	return nil
-}
-
-func (p *Parser) parseArgumentList() error {
-	if p.curr.Type == token.TokMap.Type("closeParan") {
-		return nil
-	}
-
-	_, err := p.parseExpression()
-	if err != nil {
+	if err := p.symbolTable.ValidateFunctionCall(string(id.Lit), id.Line, arguments); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func (p *Parser) parseArgumentList() ([]semantic.Type, error) {
+	if p.curr.Type == token.TokMap.Type("closeParan") {
+		return []semantic.Type{}, nil
+	}
+
+	currType, err := p.parseExpression()
+	if err != nil {
+		return []semantic.Type{}, err
+	}
+
+	argumentTypes := make([]semantic.Type, 0)
+	argumentTypes = append(argumentTypes, currType)
+
 	for p.curr.Type == token.TokMap.Type("repeatTerminator") {
 		p.next()
-		_, err := p.parseExpression()
+		argType, err := p.parseExpression()
+		argumentTypes = append(argumentTypes, argType)
 		if err != nil {
-			return err
+			return []semantic.Type{}, err
 		}
 	}
-	return nil
+	return argumentTypes, nil
 }
 
 func (p *Parser) parsePrintList() error {
@@ -541,21 +579,19 @@ func (p *Parser) parseExpression() (semantic.Type, error) {
 
 	if p.curr.Type == token.TokMap.Type("relOp") {
 		operator := string(p.curr.Lit)
+		p.codeGenerator.OperatorStack.Push(operator)
 		p.next()
 
-		rightType, err := p.parseExp()
+		_, err := p.parseExp()
 		if err != nil {
 			return semantic.TypeError, err
 		}
 
-		// Check compatibility using semantic cube
-		resultType := p.semanticCube.GetResultType(leftType, rightType, operator)
-		if resultType == semantic.TypeError {
-			return semantic.TypeError, fmt.Errorf("line %d: invalid operation %v %s %v",
-				p.curr.Line, leftType, operator, rightType)
+		if err := p.codeGenerator.HandleOp(); err != nil {
+			return semantic.TypeError, err
 		}
 
-		return resultType, nil
+		return semantic.TypeInt, nil
 	}
 
 	return leftType, nil
@@ -567,24 +603,29 @@ func (p *Parser) parseExp() (semantic.Type, error) {
 		return semantic.TypeError, err
 	}
 
-	if p.curr.Type == token.TokMap.Type("expressionOp") {
+	for p.curr.Type == token.TokMap.Type("expressionOp") {
 		operator := string(p.curr.Lit)
 		p.next()
 
-		rightType, err := p.parseExp()
+		p.codeGenerator.OperatorStack.Push(operator)
+
+		rightType, err := p.parseTerm()
 		if err != nil {
 			return semantic.TypeError, err
 		}
 
-		// Check compatibility using semantic cube
-		resultType := p.semanticCube.GetResultType(leftType, rightType, operator)
-		if resultType == semantic.TypeError {
-			return semantic.TypeError, fmt.Errorf("line %d: invalid operation %v %s %v",
-				p.curr.Line, leftType, operator, rightType)
+		if err := p.codeGenerator.HandleOp(); err != nil {
+			return semantic.TypeError, err
 		}
 
-		return resultType, nil
+		if leftType == semantic.TypeFloat || rightType == semantic.TypeFloat {
+			leftType = semantic.TypeFloat
+		} else {
+			leftType = semantic.TypeInt
+		}
+
 	}
+
 	return leftType, nil
 }
 
@@ -598,19 +639,24 @@ func (p *Parser) parseTerm() (semantic.Type, error) {
 		operator := string(p.curr.Lit)
 		p.next()
 
+		p.codeGenerator.OperatorStack.Push(operator)
+
 		rightType, err := p.parseTerm()
+
+		if err := p.codeGenerator.HandleOp(); err != nil {
+			return semantic.TypeError, err
+		}
+
 		if err != nil {
 			return semantic.TypeError, err
 		}
 
 		// Check compatibility using semantic cube
-		resultType := p.semanticCube.GetResultType(leftType, rightType, operator)
-		if resultType == semantic.TypeError {
-			return semantic.TypeError, fmt.Errorf("line %d: invalid operation %v %s %v",
-				p.curr.Line, leftType, operator, rightType)
+		if leftType == semantic.TypeFloat || rightType == semantic.TypeFloat {
+			return semantic.TypeFloat, nil
 		}
 
-		return resultType, nil
+		return semantic.TypeInt, nil
 	}
 
 	return leftType, nil
@@ -619,41 +665,57 @@ func (p *Parser) parseTerm() (semantic.Type, error) {
 func (p *Parser) parseFactor() (semantic.Type, error) {
 	switch p.curr.Type {
 	case token.TokMap.Type("openParan"):
+		p.codeGenerator.HandleOpenParen()
 		p.next()
 		exprType, err := p.parseExpression()
 		if err != nil {
 			return semantic.TypeError, err
 		}
+
+		if p.curr.Type == token.TokMap.Type("closeParan") {
+			if err := p.codeGenerator.HandleCloseParen(); err != nil {
+				return exprType, err
+			}
+		}
 		if err := p.expect(token.TokMap.Type("closeParan")); err != nil {
 			return semantic.TypeError, err
 		}
 		return exprType, nil
-	case token.TokMap.Type("closeParan"):
-		p.next()
-		switch p.curr.Type {
-		case token.TokMap.Type("id"), token.TokMap.Type("intLit"), token.TokMap.Type("floatLit"):
-			return p.getType(p.curr)
-		default:
-			return semantic.TypeError, fmt.Errorf("expected ID, IntLit, or FloatLit after expressionOp")
-		}
 	case token.TokMap.Type("expressionOp"):
+		litSymbol := string(p.curr.Lit)
 		if string(p.curr.Lit) != "+" && string(p.curr.Lit) != "-" {
 			return semantic.TypeError, fmt.Errorf("unexpected operator: %s", p.curr.Lit)
 		}
 		p.next()
 
 		switch p.curr.Type {
-		case token.TokMap.Type("intLit"), token.TokMap.Type("floatLit"):
-			return p.getType(p.curr)
+		// Logic for negatives??? Plus sign should be parsed but ignored.
+		case token.TokMap.Type("id"), token.TokMap.Type("intLit"), token.TokMap.Type("floatLit"):
+			tok := p.curr
+			tokType, err := p.getType(p.curr)
+			if err != nil {
+				return semantic.TypeError, err
+			}
+			if litSymbol == "+" {
+				litSymbol = ""
+			}
+
+			p.codeGenerator.HandleFactor(litSymbol+string(tok.Lit), tokType)
+			return tokType, nil
 		default:
 			return semantic.TypeError, fmt.Errorf("expected number after %s", p.curr.Lit)
 		}
 	case token.TokMap.Type("id"), token.TokMap.Type("intLit"), token.TokMap.Type("floatLit"):
 		tok := p.curr
-		return p.getType(tok)
+		tokType, err := p.getType(tok)
+		if err != nil {
+			return semantic.TypeError, err
+		}
+		p.codeGenerator.HandleFactor(string(tok.Lit), tokType)
+		return tokType, nil
 	default:
-		return semantic.TypeError, fmt.Errorf("unexpected token in factor: %v",
-			token.TokMap.Id(p.curr.Type))
+		return semantic.TypeError, fmt.Errorf("unexpected token in factor: %v in line %l",
+			token.TokMap.Id(p.curr.Type), p.curr.Line)
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 
 func TestParser(t *testing.T) {
 	fmt.Println("Test Pogo Parser")
-	inputFile := "pogoPatito.pogo"
+	inputFile := "simple.pogo"
 	input, err := os.ReadFile(inputFile)
 
 	if err != nil {
@@ -27,3 +27,23 @@ func TestParser(t *testing.T) {
 		fmt.Println("Input successfully parsed!")
 	}
 }
+
+//func TestSimpleParser(t *testing.T) {
+//	fmt.Println("Test Pogo Parser")
+//	inputFile := "simple.pogo"
+//	input, err := os.ReadFile(inputFile)
+//
+//	if err != nil {
+//		t.Fatalf("Error reading input: %v", err)
+//	}
+//
+//	lex := lexer.NewLexer(input)
+//	p := pogo_parser.NewParser(lex)
+//
+//	err = p.ParseProgram()
+//	if err != nil {
+//		fmt.Println("Parse error:", err)
+//	} else {
+//		fmt.Println("Input successfully parsed!")
+//	}
+//}

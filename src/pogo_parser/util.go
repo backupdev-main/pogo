@@ -6,6 +6,25 @@ import (
 	"pogo/src/token"
 )
 
+func (p *Parser) next() {
+	p.curr = p.lexer.Scan()
+}
+
+func (p *Parser) expect(typ token.Type) error {
+	//fmt.Println("Processing token", string(p.curr.Lit), "as ", token.TokMap.Id(typ))
+	// fmt.Println("This is the context", p.lexer.s)
+	if p.curr.Type != typ {
+		return p.error(fmt.Sprintf("expected %v, got %v", token.TokMap.Id(typ), token.TokMap.Id(p.curr.Type)))
+	}
+	p.next()
+	return nil
+}
+
+// Error helper function
+func (p *Parser) error(msg string) error {
+	return fmt.Errorf("line %d: %s", p.curr.Line, msg)
+}
+
 func (p *Parser) isStatementStart() (bool, error) {
 	statementStarts := map[token.Type]struct{}{
 		token.TokMap.Type("kwdWhile"): {},
@@ -21,6 +40,7 @@ func (p *Parser) isStatementStart() (bool, error) {
 }
 
 func (p *Parser) addVariablesToSymbolTable(semType semantic.Type, currentVars []string) error {
+
 	for _, varName := range currentVars {
 		if err := p.symbolTable.AddVariable(varName, semType, p.curr.Line, p.curr.Column); err != nil {
 			return err

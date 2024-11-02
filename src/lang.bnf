@@ -48,139 +48,139 @@ _lineComment  : '/' '/' {.} '\n' ;
 _blockComment : '/' '*' {. | '*'} '*' '/' ;
 
 // === [ Syntax part] =========================================================
-Program
-    : ProgramName VarDeclarationSection FunctionListOpt MainSection
-    ;
-
-ProgramName
-    : kwdProgram id terminator
-    ;
-
-VarDeclarationSection
-    : empty
-    | VarDeclaration VarDeclarationSection
-    ;
-
-VarDeclaration
-    : kwdVars VarList typeAssignOp type terminator
-    ;
-
-VarList
-    : id
-    | VarList repeatTerminator id
-    ;
-
-FunctionListOpt
-    : FunctionList
-    | empty
-    ;
-
-FunctionList
-    : Function
-    | FunctionList Function
-    ;
-
-Function
-    : kwdFunc id openParan ParameterList closeParan Block terminator
-    ;
-
-Block
-    : openBrace StatementList closeBrace
-    ;
-
-ParameterList
-    : Parameter
-    | ParameterList repeatTerminator Parameter
-    | empty
-    ;
-
-Parameter
-    : id typeAssignOp type
-    ;
-
-MainSection
-    : kwdBegin StatementList kwdEnd
-    ;
-
-StatementList
-    : Statement
-    | StatementList Statement
-    ;
-
-Statement
-    : IfStatement
-    | PrintStatement terminator
-    | Assignment terminator
-    | FunctionCall terminator
-    | WhileStatement
-    ;
-
-IfStatement
-    : SimpleIfStatement
-    | IfElseStatement
-    ;
-
-SimpleIfStatement
-    : kwdIf openParan Expression closeParan Block
-    ;
-
-IfElseStatement
-    : kwdIf openParan Expression closeParan Block kwdElse Block
-    ;
-
-WhileStatement
-    : kwdWhile openParan Expression closeParan Block
-    ;
-
-PrintStatement
-    : kwdPrint openParan PrintList closeParan
-    ;
-
-PrintList
-    : PrintItem
-    | PrintList repeatTerminator PrintItem
-    ;
-
-PrintItem
-    : Expression
-    | stringLit
-    ;
-
-Assignment
-    : id assignOp Expression
-    ;
-
-FunctionCall
-    : id openParan ArgumentList closeParan
-    ;
-
-ArgumentList
-    : Expression
-    | ArgumentList repeatTerminator Expression
-    | empty
-    ;
-
-Expression
-    : Exp
-    | Exp relOp Exp
-    ;
-
-Exp
-    : Term
-    | Term expressionOp Exp
-    ;
-
-Term
-    : Factor
-    | Term termOp Factor
-    ;
-
-Factor
-    : openParan Expression closeParan
-    | expressionOp id
-    | expressionOp intLit
-    | expressionOp floatLit
-    | id
-    | intLit
-    | floatLit
-    ;
+//Program
+//    : ProgramName VarDeclarationSection FunctionListOpt MainSection
+//    ;
+//
+//ProgramName
+//    : kwdProgram id terminator
+//    ;
+//
+//VarDeclarationSection
+//    : empty
+//    | VarDeclaration VarDeclarationSection
+//    ;
+//
+//VarDeclaration
+//    : kwdVars VarList typeAssignOp type terminator
+//    ;
+//
+//VarList
+//    : id
+//    | VarList repeatTerminator id
+//    ;
+//
+//FunctionListOpt
+//    : FunctionList
+//    | empty
+//    ;
+//
+//FunctionList
+//    : Function
+//    | FunctionList Function
+//    ;
+//
+//Function
+//    : kwdFunc id openParan ParameterList closeParan Block terminator
+//    ;
+//
+//Block
+//    : openBrace StatementList closeBrace
+//    ;
+//
+//ParameterList
+//    : Parameter
+//    | ParameterList repeatTerminator Parameter
+//    | empty
+//    ;
+//
+//Parameter
+//    : id typeAssignOp type
+//    ;
+//
+//MainSection
+//    : kwdBegin StatementList kwdEnd
+//    ;
+//
+//StatementList
+//    : Statement
+//    | StatementList Statement
+//    ;
+//
+//Statement
+//    : IfStatement
+//    | PrintStatement terminator
+//    | Assignment terminator
+//    | FunctionCall terminator
+//    | WhileStatement
+//    ;
+//
+//IfStatement
+//    : SimpleIfStatement
+//    | IfElseStatement
+//    ;
+//
+//SimpleIfStatement
+//    : kwdIf openParan Expression closeParan Block
+//    ;
+//
+//IfElseStatement
+//    : kwdIf openParan Expression closeParan Block kwdElse Block
+//    ;
+//
+//WhileStatement
+//    : kwdWhile openParan Expression closeParan Block
+//    ;
+//
+//PrintStatement
+//    : kwdPrint openParan PrintList closeParan
+//    ;
+//
+//PrintList
+//    : PrintItem
+//    | PrintList repeatTerminator PrintItem
+//    ;
+//
+//PrintItem
+//    : Expression
+//    | stringLit
+//    ;
+//
+//Assignment
+//    : id assignOp Expression
+//    ;
+//
+//FunctionCall
+//    : id openParan ArgumentList closeParan
+//    ;
+//
+//ArgumentList
+//    : Expression
+//    | ArgumentList repeatTerminator Expression
+//    | empty
+//    ;
+//
+//Expression
+//    : Exp
+//    | Exp relOp Exp
+//    ;
+//
+//Exp
+//    : Term
+//    | Term expressionOp Exp
+//    ;
+//
+//Term
+//    : Factor
+//    | Term termOp Factor
+//    ;
+//
+//Factor
+//    : openParan Expression closeParan
+//    | expressionOp id
+//    | expressionOp intLit
+//    | expressionOp floatLit
+//    | id
+//    | intLit
+//    | floatLit
+//    ;

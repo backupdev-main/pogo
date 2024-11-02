@@ -3,7 +3,7 @@
   <img src="/pogologo.png" width="400" style="display: block; margin: 0 auto;" alt="logo">
 </p>
 
-A recursive descent parser for the **Pogo** programming language, implemented in Go. This parser performs **lexical analysis**, **syntax parsing**, and **semantic validation**.
+A compiler for the **Pogo** programming language, implemented in Go. This hybrid compiler performs **lexical analysis**, **syntax parsing**, **semantic validation**, "intermediate code generation" and "code execution".
 
 ## Features
 

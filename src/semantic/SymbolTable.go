@@ -60,7 +60,6 @@ func NewSymbolTable() *SymbolTable {
 }
 
 func (st *SymbolTable) GetType(name string) (Type, error) {
-	fmt.Println("Entering Scope", st.currentScope)
 	if st.variables[st.currentScope] == nil {
 		st.variables[st.currentScope] = make(map[string]interface{})
 	}

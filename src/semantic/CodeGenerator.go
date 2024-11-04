@@ -152,7 +152,6 @@ func (ql *QuadrupleList) HandleAssignment(target string, targetType Type) error 
 }
 
 func (ql *QuadrupleList) HandleWhileStart() int {
-	// Return the current position where we'll jump back to
 	return len(ql.Quads)
 }
 
@@ -228,33 +227,6 @@ func (ql *QuadrupleList) HandleIfStatement() error {
 	return nil
 }
 
-func (ql *QuadrupleList) HandleFunctionDeclaration(funcName string) {
-	ql.Quads = append(ql.Quads, Quadruple{
-		Operator: "FUNC",
-		LeftOp:   funcName,
-		RightOp:  nil,
-		Result:   nil,
-	})
-}
-
-func (ql *QuadrupleList) HandleParameter(paramName string, paramType Type) {
-	ql.Quads = append(ql.Quads, Quadruple{
-		Operator: "PARAM",
-		LeftOp:   paramName,
-		RightOp:  paramType,
-		Result:   nil,
-	})
-}
-
-func (ql *QuadrupleList) HandleFunctionEnd() {
-	ql.Quads = append(ql.Quads, Quadruple{
-		Operator: "ENDFUNC",
-		LeftOp:   nil,
-		RightOp:  nil,
-		Result:   nil,
-	})
-}
-
 func (ql *QuadrupleList) HandleElse() error {
 
 	quad := Quadruple{
@@ -292,6 +264,18 @@ func (ql *QuadrupleList) HandleEndIf() error {
 
 	ql.Quads[jumpIndex].Result = len(ql.Quads)
 
+	return nil
+}
+
+func (ql *QuadrupleList) HandlePrint(value interface{}) error {
+	quad := Quadruple{
+		Operator: "print",
+		LeftOp:   value,
+		RightOp:  nil,
+		Result:   nil,
+	}
+
+	ql.Quads = append(ql.Quads, quad)
 	return nil
 }
 

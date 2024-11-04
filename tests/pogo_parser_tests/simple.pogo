@@ -1,21 +1,14 @@
 program simple;
-
-var x, y: float;
-
-func patito(x : int, y : int) {
-    var z : int;
-    // print(x + y + z)
-};
+var output : float;
+var a, b, c, d, e, f, k, h, j, g, l: int;
+var age_pablo, age_nan  : int;
 
 begin
-    x = (x + 5) * y + 7 / 5;
-    if (x > 8) {
-        y = x;
-    } else {
-        x = y;
-        while (x > y) {
-            x = x + 1;
-        }
+    output = ((a + b) * c + d * e * f + k / h * j) + g * l + h + j > (a - c * d) / f;
+
+    while(age_pablo > age_nan) {
+        age_nan = age_nan + 1;
     }
-    x = 55 + 95 / 9 * (5 * 4);
+
+    print("Hello World", a + b)
 end

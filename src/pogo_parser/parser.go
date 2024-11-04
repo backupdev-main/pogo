@@ -557,12 +557,25 @@ func (p *Parser) parsePrintList() error {
 }
 
 func (p *Parser) parsePrintItem() error {
+
 	if p.curr.Type == token.TokMap.Type("stringLit") {
+		if err := p.codeGenerator.HandlePrint(string(p.curr.Lit)); err != nil {
+			return err
+		}
 		p.next()
 		return nil
 	}
 
 	_, err := p.parseExpression()
+	if p.codeGenerator.OperandStack.IsEmpty() {
+		return fmt.Errorf("missing expression result for print statement")
+	}
+	result := p.codeGenerator.OperandStack.Pop()
+	p.codeGenerator.TypeStack.Pop()
+
+	if err := p.codeGenerator.HandlePrint(result); err != nil {
+		return err
+	}
 
 	if err != nil {
 		return err

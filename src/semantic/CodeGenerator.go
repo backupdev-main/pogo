@@ -1,6 +1,10 @@
 package semantic
 
-import "fmt"
+import (
+	"fmt"
+	"pogo/src/shared"
+	"pogo/src/virtualmachine"
+)
 
 // Quadruple struct
 type Quadruple struct {
@@ -18,6 +22,7 @@ type QuadrupleList struct {
 	JumpStack     *Stack
 	TempCounter   int
 	SemanticCube  *SemanticCube
+	MemoryManager *virtualmachine.MemoryManager
 }
 
 func NewQuadrupleList() *QuadrupleList {
@@ -29,13 +34,16 @@ func NewQuadrupleList() *QuadrupleList {
 		JumpStack:     NewStack(),
 		TempCounter:   0,
 		SemanticCube:  NewSemanticCube(),
+		MemoryManager: virtualmachine.NewMemoryManager(),
 	}
 }
 
-func (ql *QuadrupleList) NewTemp() string {
-	temp := fmt.Sprintf("t%d", ql.TempCounter)
-	ql.TempCounter++
-	return temp
+func (ql *QuadrupleList) NewTemp(tempType shared.Type) (int, error) {
+	addr, err := ql.MemoryManager.AllocateTemp(tempType)
+	if err != nil {
+		return -1, err
+	}
+	return addr, nil
 }
 
 func (ql *QuadrupleList) HandleOpenParen() {
@@ -43,7 +51,6 @@ func (ql *QuadrupleList) HandleOpenParen() {
 }
 
 func (ql *QuadrupleList) HandleCloseParen() error {
-	// Pop and process all operators until we find the matching open parenthesis
 	for !ql.OperatorStack.IsEmpty() {
 		topOp := ql.OperatorStack.Top()
 		if topOp == nil {
@@ -62,16 +69,20 @@ func (ql *QuadrupleList) HandleCloseParen() error {
 		}
 
 		rightOp := ql.OperandStack.Pop()
-		rightType := ql.TypeStack.Pop().(Type)
+		rightType := ql.TypeStack.Pop().(shared.Type)
 		leftOp := ql.OperandStack.Pop()
-		leftType := ql.TypeStack.Pop().(Type)
+		leftType := ql.TypeStack.Pop().(shared.Type)
 
 		resultType := ql.SemanticCube.GetResultType(leftType, rightType, operator)
-		if resultType == TypeError {
+		if resultType == shared.TypeError {
 			return fmt.Errorf("type mismatch for operation %v %s %v", leftType, operator, rightType)
 		}
 
-		result := ql.NewTemp()
+		result, err := ql.NewTemp(resultType)
+
+		if err != nil {
+			return err
+		}
 
 		quad := Quadruple{
 			Operator: operator,
@@ -91,17 +102,21 @@ func (ql *QuadrupleList) HandleCloseParen() error {
 func (ql *QuadrupleList) HandleOp() error {
 	if ql.OperatorStack.Top() != nil {
 		right := ql.OperandStack.Pop()
-		rightType := ql.TypeStack.Pop().(Type)
+		rightType := ql.TypeStack.Pop().(shared.Type)
 		left := ql.OperandStack.Pop()
-		leftType := ql.TypeStack.Pop().(Type)
+		leftType := ql.TypeStack.Pop().(shared.Type)
 		op := ql.OperatorStack.Pop().(string)
 
 		resultType := ql.SemanticCube.GetResultType(leftType, rightType, op)
-		if resultType == TypeError {
+		if resultType == shared.TypeError {
 			return fmt.Errorf("type mismatch for operation %v %s %v", leftType, op, rightType)
 		}
 
-		result := fmt.Sprintf("t%d", ql.TempCounter)
+		result, err := ql.MemoryManager.AllocateTemp(resultType)
+
+		if err != nil {
+			return err
+		}
 		ql.TempCounter++
 
 		ql.Quads = append(ql.Quads, Quadruple{
@@ -118,26 +133,41 @@ func (ql *QuadrupleList) HandleOp() error {
 	return nil
 }
 
-func (ql *QuadrupleList) HandleFactor(value interface{}, valueType Type) {
-	ql.OperandStack.Push(value)
+func (ql *QuadrupleList) HandleFactor(value string, valueType shared.Type, symbolTable *SymbolTable) error {
+	var addr int
+	var err error
+
+	if isNumeric(value) {
+		addr, err = ql.MemoryManager.AllocateConstant(value)
+		// fmt.Println("Numeric", addr, err)
+	} else {
+		addr, err = symbolTable.GetVariableAddress(value)
+	}
+
+	if err != nil {
+		return fmt.Errorf("error allocating value: %v", err, value)
+	}
+
+	ql.OperandStack.Push(addr)
 	ql.TypeStack.Push(valueType)
 	//fmt.Printf("After HandleFactor(%v): Operands=%v, Operators=%v\n",
 	//	value,
 	//	ql.OperandStack,
 	//	ql.OperatorStack)
+	return nil
 }
 
-func (ql *QuadrupleList) HandleAssignment(target string, targetType Type) error {
+func (ql *QuadrupleList) HandleAssignment(target int, targetType shared.Type) error {
 	if ql.OperandStack.Top() == nil {
 		return fmt.Errorf("missing expression for assignment")
 	}
 
 	value := ql.OperandStack.Pop()
-	valueType := ql.TypeStack.Pop().(Type)
+	valueType := ql.TypeStack.Pop().(shared.Type)
 
 	// Check if assignment is valid using semantic cube
 	resultType := ql.SemanticCube.GetResultType(targetType, valueType, "=")
-	if resultType == TypeError {
+	if resultType == shared.TypeError {
 		return fmt.Errorf("cannot assign value of type %v to variable of type %v", valueType, targetType)
 	}
 
@@ -163,7 +193,7 @@ func (ql *QuadrupleList) HandleWhileCondition() error {
 	condition := ql.OperandStack.Pop()
 	condType := ql.TypeStack.Pop()
 
-	if condType != TypeInt {
+	if condType != shared.TypeInt {
 		return fmt.Errorf("condition must be boolean (result of comparison)")
 	}
 
@@ -208,7 +238,7 @@ func (ql *QuadrupleList) HandleIfStatement() error {
 	condition := ql.OperandStack.Pop()
 	condType := ql.TypeStack.Pop()
 
-	if condType != TypeInt {
+	if condType != shared.TypeInt {
 		return fmt.Errorf("condition must be boolean (result of comparison)")
 	}
 
@@ -216,7 +246,7 @@ func (ql *QuadrupleList) HandleIfStatement() error {
 		Operator: "GotoF",
 		LeftOp:   condition,
 		RightOp:  nil,
-		Result:   nil, // This will be filled in later
+		Result:   nil,
 	}
 
 	jumpIndex := len(ql.Quads)
@@ -236,20 +266,16 @@ func (ql *QuadrupleList) HandleElse() error {
 		Result:   nil,
 	}
 
-	// Add the Goto quadruple
 	gotoIndex := len(ql.Quads)
 	ql.Quads = append(ql.Quads, quad)
 
-	// Fill the previous GotoF (from HandleIf)
 	if ql.JumpStack.IsEmpty() {
 		return fmt.Errorf("mismatched if-else: no corresponding if statement found")
 	}
 	falseJumpIndex := ql.JumpStack.Pop().(int)
 
-	// The false jump should point to the next quadruple
 	ql.Quads[falseJumpIndex].Result = len(ql.Quads)
 
-	// Push the Goto index for later backpatching
 	ql.JumpStack.Push(gotoIndex)
 
 	return nil
@@ -268,6 +294,14 @@ func (ql *QuadrupleList) HandleEndIf() error {
 }
 
 func (ql *QuadrupleList) HandlePrint(value interface{}) error {
+	if v, ok := value.(string); ok {
+		addr, err := ql.MemoryManager.GetStringAddress(v)
+		if err != nil {
+			return err
+		}
+		value = addr // Assign back to original value variable if needed
+	}
+
 	quad := Quadruple{
 		Operator: "print",
 		LeftOp:   value,
@@ -284,6 +318,50 @@ func (ql *QuadrupleList) Print() {
 	for i, quad := range ql.Quads {
 		fmt.Printf("%d: (%v, %v, %v, %v)\n", i, quad.Operator, quad.LeftOp, quad.RightOp, quad.Result)
 	}
+}
+
+func (ql *QuadrupleList) HandleERA(functionName string) error {
+	quad := Quadruple{
+		Operator: "ERA",
+		LeftOp:   functionName,
+		RightOp:  nil,
+		Result:   nil,
+	}
+	ql.Quads = append(ql.Quads, quad)
+	return nil
+}
+
+func (ql *QuadrupleList) HandleParam(value interface{}, paramNum int) error {
+	quad := Quadruple{
+		Operator: "PARAM",
+		LeftOp:   value,
+		RightOp:  paramNum,
+		Result:   nil,
+	}
+	ql.Quads = append(ql.Quads, quad)
+	return nil
+}
+
+func (ql *QuadrupleList) HandleGOSUB(functionName string, startQuad int) error {
+	quad := Quadruple{
+		Operator: "GOSUB",
+		LeftOp:   functionName,
+		RightOp:  len(ql.Quads) + 1,
+		Result:   startQuad,
+	}
+	ql.Quads = append(ql.Quads, quad)
+	return nil
+}
+
+func (ql *QuadrupleList) HandleENDPROC() error {
+	quad := Quadruple{
+		Operator: "ENDPROC",
+		LeftOp:   nil,
+		RightOp:  nil,
+		Result:   nil,
+	}
+	ql.Quads = append(ql.Quads, quad)
+	return nil
 }
 
 func (ql *QuadrupleList) PrintStacks() {

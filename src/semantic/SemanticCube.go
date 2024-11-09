@@ -1,20 +1,22 @@
 package semantic
 
+import "pogo/src/shared"
+
 type SemanticCube struct {
-	cube map[Type]map[Type]map[string]Type
+	cube map[shared.Type]map[shared.Type]map[string]shared.Type
 }
 
 // NewSemanticCube initializes the semantic cube for type checking
 func NewSemanticCube() *SemanticCube {
 	cube := &SemanticCube{
-		cube: make(map[Type]map[Type]map[string]Type),
+		cube: make(map[shared.Type]map[shared.Type]map[string]shared.Type),
 	}
 
 	// Initialize semantic cube
-	for _, t1 := range []Type{TypeInt, TypeFloat} {
-		cube.cube[t1] = make(map[Type]map[string]Type)
-		for _, t2 := range []Type{TypeInt, TypeFloat} {
-			cube.cube[t1][t2] = make(map[string]Type)
+	for _, t1 := range []shared.Type{shared.TypeInt, shared.TypeFloat} {
+		cube.cube[t1] = make(map[shared.Type]map[string]shared.Type)
+		for _, t2 := range []shared.Type{shared.TypeInt, shared.TypeFloat} {
+			cube.cube[t1][t2] = make(map[string]shared.Type)
 		}
 	}
 
@@ -22,49 +24,49 @@ func NewSemanticCube() *SemanticCube {
 	arithOps := []string{"+", "-", "*", "/"}
 	for _, op := range arithOps {
 		// Int operations
-		cube.cube[TypeInt][TypeInt][op] = TypeInt
+		cube.cube[shared.TypeInt][shared.TypeInt][op] = shared.TypeInt
 		if op == "/" {
-			cube.cube[TypeInt][TypeInt][op] = TypeFloat
+			cube.cube[shared.TypeInt][shared.TypeInt][op] = shared.TypeFloat
 		}
-		cube.cube[TypeInt][TypeFloat][op] = TypeFloat
+		cube.cube[shared.TypeInt][shared.TypeFloat][op] = shared.TypeFloat
 
-		cube.cube[TypeFloat][TypeInt][op] = TypeFloat
-		cube.cube[TypeFloat][TypeFloat][op] = TypeFloat
+		cube.cube[shared.TypeFloat][shared.TypeInt][op] = shared.TypeFloat
+		cube.cube[shared.TypeFloat][shared.TypeFloat][op] = shared.TypeFloat
 	}
 
 	relOps := []string{"<", ">", "==", "!=", "<=", ">="}
 	for _, op := range relOps {
-		cube.cube[TypeInt][TypeInt][op] = TypeInt
-		cube.cube[TypeInt][TypeFloat][op] = TypeInt
-		cube.cube[TypeFloat][TypeInt][op] = TypeInt
-		cube.cube[TypeFloat][TypeFloat][op] = TypeInt
+		cube.cube[shared.TypeInt][shared.TypeInt][op] = shared.TypeInt
+		cube.cube[shared.TypeInt][shared.TypeFloat][op] = shared.TypeInt
+		cube.cube[shared.TypeFloat][shared.TypeInt][op] = shared.TypeInt
+		cube.cube[shared.TypeFloat][shared.TypeFloat][op] = shared.TypeInt
 	}
 
-	cube.cube[TypeFloat][TypeInt]["="] = TypeFloat
-	cube.cube[TypeFloat][TypeFloat]["="] = TypeFloat
-	cube.cube[TypeInt][TypeInt]["="] = TypeInt
-	cube.cube[TypeInt][TypeFloat]["="] = TypeError
+	cube.cube[shared.TypeFloat][shared.TypeInt]["="] = shared.TypeFloat
+	cube.cube[shared.TypeFloat][shared.TypeFloat]["="] = shared.TypeFloat
+	cube.cube[shared.TypeInt][shared.TypeInt]["="] = shared.TypeInt
+	cube.cube[shared.TypeInt][shared.TypeFloat]["="] = shared.TypeError
 
 	return cube
 }
 
-func (sc *SemanticCube) GetResultType(t1, t2 Type, operator string) Type {
+func (sc *SemanticCube) GetResultType(t1, t2 shared.Type, operator string) shared.Type {
 	// String operations are not allowed
-	if t1 == TypeString || t2 == TypeString {
-		return TypeError
+	if t1 == shared.TypeString || t2 == shared.TypeString {
+		return shared.TypeError
 	}
 
-	if t1 == TypeError || t2 == TypeError {
-		return TypeError
+	if t1 == shared.TypeError || t2 == shared.TypeError {
+		return shared.TypeError
 	}
 
 	if result, exists := sc.cube[t1][t2][operator]; exists {
 		return result
 	}
 
-	return TypeError
+	return shared.TypeError
 }
 
-func (sc *SemanticCube) ValidatePrintItem(t Type) bool {
-	return t == TypeInt || t == TypeFloat || t == TypeString
+func (sc *SemanticCube) ValidatePrintItem(t shared.Type) bool {
+	return t == shared.TypeInt || t == shared.TypeFloat || t == shared.TypeString
 }

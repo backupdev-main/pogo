@@ -1,8 +1,8 @@
-package pogo_parser
+package parser
 
 import (
 	"fmt"
-	"pogo/src/semantic"
+	"pogo/src/shared"
 	"pogo/src/token"
 )
 
@@ -39,10 +39,26 @@ func (p *Parser) isStatementStart() (bool, error) {
 	return false, nil
 }
 
-func (p *Parser) addVariablesToSymbolTable(semType semantic.Type, currentVars []string) error {
+func (p *Parser) addVariablesToSymbolTable(semType shared.Type, currentVars []string) error {
 
 	for _, varName := range currentVars {
-		if err := p.symbolTable.AddVariable(varName, semType, p.curr.Line, p.curr.Column); err != nil {
+
+		var addr int
+		var err error
+
+		if p.symbolTable.GetScope() == "global" {
+			addr, err = p.codeGenerator.MemoryManager.AllocateGlobal(semType)
+		} else {
+			addr, err = p.codeGenerator.MemoryManager.AllocateLocal(semType)
+			if err != nil {
+				return err
+			}
+		}
+
+		if err != nil {
+			return err
+		}
+		if err := p.symbolTable.AddVariable(varName, semType, p.curr.Line, p.curr.Column, addr); err != nil {
 			return err
 		}
 	}
@@ -50,41 +66,41 @@ func (p *Parser) addVariablesToSymbolTable(semType semantic.Type, currentVars []
 	return nil
 }
 
-func (p *Parser) returnSemanticType(currType string) (semantic.Type, error) {
-	var semType semantic.Type
+func (p *Parser) returnSemanticType(currType string) (shared.Type, error) {
+	var semType shared.Type
 	switch string(currType) {
 	case "int":
-		semType = semantic.TypeInt
+		semType = shared.TypeInt
 	case "float":
-		semType = semantic.TypeFloat
+		semType = shared.TypeFloat
 	default:
-		return semantic.TypeError, fmt.Errorf("line %d: unsupported type: %s", p.curr.Line, string(currType))
+		return shared.TypeError, fmt.Errorf("line %d: unsupported type: %s", p.curr.Line, string(currType))
 	}
 	return semType, nil
 }
 
-func (p *Parser) getType(tok *token.Token) (semantic.Type, error) {
+func (p *Parser) getType(tok *token.Token) (shared.Type, error) {
 	switch tok.Type {
 	case token.TokMap.Type("intLit"):
 		p.next()
-		return semantic.TypeInt, nil
+		return shared.TypeInt, nil
 	case token.TokMap.Type("floatLit"):
 		p.next()
-		return semantic.TypeFloat, nil
+		return shared.TypeFloat, nil
 	case token.TokMap.Type("id"):
 		p.next()
 		return p.symbolTable.GetType(string(tok.Lit))
 	default:
-		return semantic.TypeError, fmt.Errorf("expected number after %s", p.curr.Lit)
+		return shared.TypeError, fmt.Errorf("expected number after %s", p.curr.Lit)
 	}
 }
 
-func (p *Parser) isAssignable(varType, exprType semantic.Type) bool {
+func (p *Parser) isAssignable(varType, exprType shared.Type) bool {
 	if varType == exprType {
 		return true
 	}
 	// Allow int -> float conversion
-	if varType == semantic.TypeFloat && exprType == semantic.TypeInt {
+	if varType == shared.TypeFloat && exprType == shared.TypeInt {
 		return true
 	}
 	return false

@@ -5,42 +5,42 @@ package tests
 //
 //	// Test cases structure: {type1, type2, operator, expectedResult}
 //	testCases := []struct {
-//		t1       semantic.Type
-//		t2       semantic.Type
+//		t1       shared.Type
+//		t2       shared.Type
 //		op       string
-//		expected semantic.Type
+//		expected shared.Type
 //	}{
 //		// Arithmetic operations with integers
-//		{semantic.TypeInt, semantic.TypeInt, "+", semantic.TypeInt},
-//		{semantic.TypeInt, semantic.TypeInt, "-", semantic.TypeInt},
-//		{semantic.TypeInt, semantic.TypeInt, "*", semantic.TypeInt},
-//		{semantic.TypeInt, semantic.TypeInt, "/", semantic.TypeInt},
+//		{shared.TypeInt, shared.TypeInt, "+", shared.TypeInt},
+//		{shared.TypeInt, shared.TypeInt, "-", shared.TypeInt},
+//		{shared.TypeInt, shared.TypeInt, "*", shared.TypeInt},
+//		{shared.TypeInt, shared.TypeInt, "/", shared.TypeInt},
 //
-//		// Arithmetic operations with mixed types (should always return float)
-//		{semantic.TypeInt, semantic.TypeFloat, "+", semantic.TypeFloat},
-//		{semantic.TypeFloat, semantic.TypeInt, "+", semantic.TypeFloat},
-//		{semantic.TypeInt, semantic.TypeFloat, "-", semantic.TypeFloat},
-//		{semantic.TypeFloat, semantic.TypeInt, "-", semantic.TypeFloat},
-//		{semantic.TypeInt, semantic.TypeFloat, "*", semantic.TypeFloat},
-//		{semantic.TypeFloat, semantic.TypeInt, "*", semantic.TypeFloat},
-//		{semantic.TypeInt, semantic.TypeFloat, "/", semantic.TypeFloat},
-//		{semantic.TypeFloat, semantic.TypeInt, "/", semantic.TypeFloat},
+//		// Arithmetic operations with mixed shared (should always return float)
+//		{shared.TypeInt, shared.TypeFloat, "+", shared.TypeFloat},
+//		{shared.TypeFloat, shared.TypeInt, "+", shared.TypeFloat},
+//		{shared.TypeInt, shared.TypeFloat, "-", shared.TypeFloat},
+//		{shared.TypeFloat, shared.TypeInt, "-", shared.TypeFloat},
+//		{shared.TypeInt, shared.TypeFloat, "*", shared.TypeFloat},
+//		{shared.TypeFloat, shared.TypeInt, "*", shared.TypeFloat},
+//		{shared.TypeInt, shared.TypeFloat, "/", shared.TypeFloat},
+//		{shared.TypeFloat, shared.TypeInt, "/", shared.TypeFloat},
 //
 //		// Arithmetic operations with floats
-//		{semantic.TypeFloat, semantic.TypeFloat, "+", semantic.TypeFloat},
-//		{semantic.TypeFloat, semantic.TypeFloat, "-", semantic.TypeFloat},
-//		{semantic.TypeFloat, semantic.TypeFloat, "*", semantic.TypeFloat},
-//		{semantic.TypeFloat, semantic.TypeFloat, "/", semantic.TypeFloat},
+//		{shared.TypeFloat, shared.TypeFloat, "+", shared.TypeFloat},
+//		{shared.TypeFloat, shared.TypeFloat, "-", shared.TypeFloat},
+//		{shared.TypeFloat, shared.TypeFloat, "*", shared.TypeFloat},
+//		{shared.TypeFloat, shared.TypeFloat, "/", shared.TypeFloat},
 //
 //		// Relational operations with integers
-//		{semantic.TypeInt, semantic.TypeInt, "<", semantic.TypeInt},
-//		{semantic.TypeInt, semantic.TypeInt, ">", semantic.TypeInt},
-//		{semantic.TypeInt, semantic.TypeInt, "<=", semantic.TypeInt},
+//		{shared.TypeInt, shared.TypeInt, "<", shared.TypeInt},
+//		{shared.TypeInt, shared.TypeInt, ">", shared.TypeInt},
+//		{shared.TypeInt, shared.TypeInt, "<=", semantic.TypeInt},
 //		{semantic.TypeInt, semantic.TypeInt, ">=", semantic.TypeInt},
 //		{semantic.TypeInt, semantic.TypeInt, "==", semantic.TypeInt},
 //		{semantic.TypeInt, semantic.TypeInt, "!=", semantic.TypeInt},
 //
-//		// Relational operations with mixed types (should return int as boolean)
+//		// Relational operations with mixed shared (should return int as boolean)
 //		{semantic.TypeInt, semantic.TypeFloat, "<", semantic.TypeInt},
 //		{semantic.TypeFloat, semantic.TypeInt, ">", semantic.TypeInt},
 //		{semantic.TypeInt, semantic.TypeFloat, "<=", semantic.TypeInt},
@@ -78,13 +78,13 @@ package tests
 //
 //func TestSemanticCubeOperators(t *testing.T) {
 //	cube := semantic.NewSemanticCube()
-//	types := []semantic.Type{semantic.TypeInt, semantic.TypeFloat}
+//	shared := []semantic.Type{semantic.TypeInt, semantic.TypeFloat}
 //	arithmeticOps := []string{"+", "-", "*", "/"}
 //	relationalOps := []string{"<", ">", "<=", ">=", "==", "!="}
 //
 //	// Test arithmetic operators
-//	for _, t1 := range types {
-//		for _, t2 := range types {
+//	for _, t1 := range shared {
+//		for _, t2 := range shared {
 //			for _, op := range arithmeticOps {
 //				result := cube.GetResultType(t1, t2, op)
 //				if t1 == semantic.TypeInt && t2 == semantic.TypeInt {
@@ -103,8 +103,8 @@ package tests
 //	}
 //
 //	// Test relational operators
-//	for _, t1 := range types {
-//		for _, t2 := range types {
+//	for _, t1 := range shared {
+//		for _, t2 := range shared {
 //			for _, op := range relationalOps {
 //				result := cube.GetResultType(t1, t2, op)
 //				if result != semantic.TypeInt {

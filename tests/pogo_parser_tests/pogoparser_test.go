@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"pogo/src/lexer"
-	"pogo/src/pogo_parser"
+	"pogo/src/parser"
 	"testing"
 )
 
@@ -18,7 +18,7 @@ func TestParser(t *testing.T) {
 	}
 
 	lex := lexer.NewLexer(input)
-	p := pogo_parser.NewParser(lex)
+	p := parser.NewParser(lex)
 
 	err = p.ParseProgram()
 	if err != nil {
@@ -38,7 +38,7 @@ func TestParser(t *testing.T) {
 //	}
 //
 //	lex := lexer.NewLexer(input)
-//	p := pogo_parser.NewParser(lex)
+//	p := parser.NewParser(lex)
 //
 //	err = p.ParseProgram()
 //	if err != nil {

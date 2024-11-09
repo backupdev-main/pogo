@@ -1,5 +1,9 @@
 package semantic
 
+import (
+	"strconv"
+)
+
 type Stack struct {
 	items []interface{}
 }
@@ -36,4 +40,10 @@ func (s *Stack) IsEmpty() bool {
 
 func (s *Stack) Size() int {
 	return len(s.items)
+}
+
+func isNumeric(s string) bool {
+	_, errInt := strconv.Atoi(s)
+	_, errFloat := strconv.ParseFloat(s, 64)
+	return errInt == nil || errFloat == nil
 }

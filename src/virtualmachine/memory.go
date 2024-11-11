@@ -163,12 +163,10 @@ func (mm *MemoryManager) AllocateConstant(value string) (int, error) {
 func (mm *MemoryManager) AllocateLocal(varType shared.Type) (int, error) {
 	switch varType {
 	case shared.TypeInt:
-		fmt.Println("Entered here")
 		if mm.currentSegment.localIntPtr >= LOCAL_INT_END {
 			return -1, fmt.Errorf("local integer memory overflow")
 		}
 		addr := mm.currentSegment.localIntPtr
-		fmt.Println("This is the addr returned", addr)
 		mm.currentSegment.localIntPtr++
 		return addr, nil
 

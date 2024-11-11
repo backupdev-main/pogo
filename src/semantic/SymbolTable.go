@@ -140,7 +140,6 @@ func (st *SymbolTable) AddFunction(name string, params []Variable, line, column 
 }
 
 func (st *SymbolTable) UpdateFunctionStartQuad(functionName string, start int) error {
-	fmt.Println("Updating function start for", functionName, start)
 	function, ok := st.variables["global"][functionName].(Function)
 	if !ok {
 		return fmt.Errorf("function %s not found", functionName)

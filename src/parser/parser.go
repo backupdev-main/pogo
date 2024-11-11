@@ -26,6 +26,8 @@ func NewParser(l *lexer.Lexer) *Parser {
 }
 
 func (p *Parser) ParseProgram() error {
+	p.codeGenerator.HandleProgramStart()
+
 	if err := p.parseProgramName(); err != nil {
 		return err
 	}
@@ -242,19 +244,18 @@ func (p *Parser) parseParameterList() ([]semantic.Variable, error) {
 	}
 
 	semType, err := p.returnSemanticType(currType)
-	fmt.Println("This is the semantic type", semType)
 	addr, err := p.codeGenerator.MemoryManager.AllocateLocal(semType)
-	fmt.Println("This is the addr ", addr)
+
 	if err != nil {
 		return []semantic.Variable{}, err
 	}
 
 	currentParams = append(currentParams, semantic.Variable{
-		Name:   string(currId.Lit),
-		Type:   semType,
-		Line:   currId.Line,
-		Column: currId.Column,
-		//Address: addr,
+		Name:    string(currId.Lit),
+		Type:    semType,
+		Line:    currId.Line,
+		Column:  currId.Column,
+		Address: addr,
 	})
 
 	if err != nil {
@@ -548,7 +549,7 @@ func (p *Parser) parseFunctionCall(id *token.Token) error {
 	}
 
 	startQuad, err := p.symbolTable.GetFunctionStartQuad(string(id.Lit))
-	fmt.Println("This is the startQuad", startQuad, err)
+
 	if err != nil {
 		return err
 	}
@@ -609,7 +610,7 @@ func (p *Parser) parsePrintList() error {
 	}
 
 	for p.curr.Type == token.TokMap.Type("repeatTerminator") {
-		p.next() // consume separator
+		p.next()
 		if err := p.parsePrintItem(); err != nil {
 			return err
 		}
@@ -632,7 +633,7 @@ func (p *Parser) parsePrintItem() error {
 	if err != nil {
 		return err
 	}
-	p.codeGenerator.PrintStacks()
+
 	if p.codeGenerator.OperandStack.IsEmpty() {
 		return fmt.Errorf("missing expression result for print statement")
 	}
@@ -797,8 +798,8 @@ func (p *Parser) parseFactor() (shared.Type, error) {
 		}
 		return tokType, nil
 	default:
-		return shared.TypeError, fmt.Errorf("unexpected token in factor: %v in line %l",
-			token.TokMap.Id(p.curr.Type), p.curr.Line)
+		return shared.TypeError, fmt.Errorf("unexpected token in factor: %v in line %l and %t",
+			token.TokMap.Id(p.curr.Type), p.curr.Line, string(p.curr.Lit))
 	}
 }
 
@@ -806,6 +807,9 @@ func (p *Parser) parseMainSection() error {
 	if err := p.expect(token.TokMap.Type("kwdBegin")); err != nil {
 		return err
 	}
+
+	mainQuadIndex := len(p.codeGenerator.Quads)
+	p.codeGenerator.Quads[0].Result = mainQuadIndex
 
 	if err := p.parseStatementList(); err != nil {
 		return err

@@ -36,6 +36,18 @@ func NewQuadrupleList() *QuadrupleList {
 		SemanticCube:  NewSemanticCube(),
 		MemoryManager: virtualmachine.NewMemoryManager(),
 	}
+
+}
+
+func (ql *QuadrupleList) HandleProgramStart() {
+	quad := Quadruple{
+		Operator: "GOTO",
+		LeftOp:   nil,
+		RightOp:  nil,
+		Result:   nil,
+	}
+
+	ql.Quads = append(ql.Quads, quad)
 }
 
 func (ql *QuadrupleList) NewTemp(tempType shared.Type) (int, error) {

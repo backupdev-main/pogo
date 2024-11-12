@@ -5,6 +5,7 @@ import (
 	"os"
 	"pogo/src/lexer"
 	"pogo/src/parser"
+	"pogo/src/virtualmachine"
 	"testing"
 )
 
@@ -23,8 +24,14 @@ func TestParser(t *testing.T) {
 	err = p.ParseProgram()
 	if err != nil {
 		fmt.Println("Parse error:", err)
+		return
 	} else {
 		fmt.Println("Input successfully parsed!")
+	}
+
+	virtualMachine := virtualmachine.NewVirtualMachine(p.CodeGenerator.Quads, p.CodeGenerator.MemoryManager)
+	if err := virtualMachine.Execute(); err != nil {
+		fmt.Println("Error during execution", err)
 	}
 }
 

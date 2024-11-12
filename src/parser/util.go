@@ -47,10 +47,13 @@ func (p *Parser) addVariablesToSymbolTable(semType shared.Type, currentVars []st
 		var err error
 
 		if p.symbolTable.GetScope() == "global" {
-			addr, err = p.codeGenerator.MemoryManager.AllocateGlobal(semType)
+			addr, err = p.CodeGenerator.MemoryManager.AllocateGlobal(semType)
 		} else {
-			addr, err = p.codeGenerator.MemoryManager.AllocateLocal(semType)
+			addr, err = p.CodeGenerator.MemoryManager.AllocateLocal(semType)
 			if err != nil {
+				return err
+			}
+			if err := p.symbolTable.IncrementFunctionVarCount(semType); err != nil {
 				return err
 			}
 		}
@@ -58,6 +61,7 @@ func (p *Parser) addVariablesToSymbolTable(semType shared.Type, currentVars []st
 		if err != nil {
 			return err
 		}
+
 		if err := p.symbolTable.AddVariable(varName, semType, p.curr.Line, p.curr.Column, addr); err != nil {
 			return err
 		}

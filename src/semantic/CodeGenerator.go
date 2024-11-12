@@ -7,19 +7,13 @@ import (
 )
 
 // Quadruple struct
-type Quadruple struct {
-	Operator string      // The operation to be performed
-	LeftOp   interface{} // Left operand
-	RightOp  interface{} // Right operand
-	Result   interface{} // Where the result will be stored
-}
 
 type QuadrupleList struct {
-	Quads         []Quadruple
-	OperatorStack *Stack
-	OperandStack  *Stack
-	TypeStack     *Stack
-	JumpStack     *Stack
+	Quads         []shared.Quadruple
+	OperatorStack *shared.Stack
+	OperandStack  *shared.Stack
+	TypeStack     *shared.Stack
+	JumpStack     *shared.Stack
 	TempCounter   int
 	SemanticCube  *SemanticCube
 	MemoryManager *virtualmachine.MemoryManager
@@ -27,11 +21,11 @@ type QuadrupleList struct {
 
 func NewQuadrupleList() *QuadrupleList {
 	return &QuadrupleList{
-		Quads:         make([]Quadruple, 0),
-		OperatorStack: NewStack(),
-		OperandStack:  NewStack(),
-		TypeStack:     NewStack(),
-		JumpStack:     NewStack(),
+		Quads:         make([]shared.Quadruple, 0),
+		OperatorStack: shared.NewStack(),
+		OperandStack:  shared.NewStack(),
+		TypeStack:     shared.NewStack(),
+		JumpStack:     shared.NewStack(),
 		TempCounter:   0,
 		SemanticCube:  NewSemanticCube(),
 		MemoryManager: virtualmachine.NewMemoryManager(),
@@ -40,8 +34,8 @@ func NewQuadrupleList() *QuadrupleList {
 }
 
 func (ql *QuadrupleList) HandleProgramStart() {
-	quad := Quadruple{
-		Operator: "GOTO",
+	quad := shared.Quadruple{
+		Operator: "goto",
 		LeftOp:   nil,
 		RightOp:  nil,
 		Result:   nil,
@@ -96,7 +90,7 @@ func (ql *QuadrupleList) HandleCloseParen() error {
 			return err
 		}
 
-		quad := Quadruple{
+		quad := shared.Quadruple{
 			Operator: operator,
 			LeftOp:   leftOp,
 			RightOp:  rightOp,
@@ -131,7 +125,7 @@ func (ql *QuadrupleList) HandleOp() error {
 		}
 		ql.TempCounter++
 
-		ql.Quads = append(ql.Quads, Quadruple{
+		ql.Quads = append(ql.Quads, shared.Quadruple{
 			Operator: op,
 			LeftOp:   left,
 			RightOp:  right,
@@ -183,7 +177,7 @@ func (ql *QuadrupleList) HandleAssignment(target int, targetType shared.Type) er
 		return fmt.Errorf("cannot assign value of type %v to variable of type %v", valueType, targetType)
 	}
 
-	ql.Quads = append(ql.Quads, Quadruple{
+	ql.Quads = append(ql.Quads, shared.Quadruple{
 		Operator: "=",
 		LeftOp:   value,
 		RightOp:  nil,
@@ -209,8 +203,8 @@ func (ql *QuadrupleList) HandleWhileCondition() error {
 		return fmt.Errorf("condition must be boolean (result of comparison)")
 	}
 
-	quad := Quadruple{
-		Operator: "GotoF",
+	quad := shared.Quadruple{
+		Operator: "gotof",
 		LeftOp:   condition,
 		RightOp:  nil,
 		Result:   nil,
@@ -229,8 +223,8 @@ func (ql *QuadrupleList) HandleWhileEnd(startIndex int) error {
 		return fmt.Errorf("mismatched while: no pending jumps found")
 	}
 
-	ql.Quads = append(ql.Quads, Quadruple{
-		Operator: "Goto",
+	ql.Quads = append(ql.Quads, shared.Quadruple{
+		Operator: "goto",
 		LeftOp:   nil,
 		RightOp:  nil,
 		Result:   startIndex,
@@ -251,11 +245,11 @@ func (ql *QuadrupleList) HandleIfStatement() error {
 	condType := ql.TypeStack.Pop()
 
 	if condType != shared.TypeInt {
-		return fmt.Errorf("condition must be boolean (result of comparison)")
+		return fmt.Errorf("condition must be 0 or 1 (result of comparison)")
 	}
 
-	quad := Quadruple{
-		Operator: "GotoF",
+	quad := shared.Quadruple{
+		Operator: "gotof",
 		LeftOp:   condition,
 		RightOp:  nil,
 		Result:   nil,
@@ -271,8 +265,8 @@ func (ql *QuadrupleList) HandleIfStatement() error {
 
 func (ql *QuadrupleList) HandleElse() error {
 
-	quad := Quadruple{
-		Operator: "Goto",
+	quad := shared.Quadruple{
+		Operator: "goto",
 		LeftOp:   nil,
 		RightOp:  nil,
 		Result:   nil,
@@ -314,7 +308,7 @@ func (ql *QuadrupleList) HandlePrint(value interface{}) error {
 		value = addr // Assign back to original value variable if needed
 	}
 
-	quad := Quadruple{
+	quad := shared.Quadruple{
 		Operator: "print",
 		LeftOp:   value,
 		RightOp:  nil,
@@ -333,7 +327,7 @@ func (ql *QuadrupleList) Print() {
 }
 
 func (ql *QuadrupleList) HandleERA(functionName string) error {
-	quad := Quadruple{
+	quad := shared.Quadruple{
 		Operator: "ERA",
 		LeftOp:   functionName,
 		RightOp:  nil,
@@ -344,7 +338,7 @@ func (ql *QuadrupleList) HandleERA(functionName string) error {
 }
 
 func (ql *QuadrupleList) HandleParam(value interface{}, paramNum int) error {
-	quad := Quadruple{
+	quad := shared.Quadruple{
 		Operator: "PARAM",
 		LeftOp:   value,
 		RightOp:  paramNum,
@@ -355,7 +349,7 @@ func (ql *QuadrupleList) HandleParam(value interface{}, paramNum int) error {
 }
 
 func (ql *QuadrupleList) HandleGOSUB(functionName string, startQuad int) error {
-	quad := Quadruple{
+	quad := shared.Quadruple{
 		Operator: "GOSUB",
 		LeftOp:   functionName,
 		RightOp:  len(ql.Quads) + 1,
@@ -366,7 +360,7 @@ func (ql *QuadrupleList) HandleGOSUB(functionName string, startQuad int) error {
 }
 
 func (ql *QuadrupleList) HandleENDPROC() error {
-	quad := Quadruple{
+	quad := shared.Quadruple{
 		Operator: "ENDPROC",
 		LeftOp:   nil,
 		RightOp:  nil,

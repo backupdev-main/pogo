@@ -16,11 +16,13 @@ type Variable struct {
 
 // Function represents a function in our function directory
 type Function struct {
-	Name       string
-	Parameters []Variable
-	Line       int
-	Column     int
-	StartQuad  int
+	Name             string
+	Parameters       []Variable
+	Line             int
+	Column           int
+	StartQuad        int
+	IntVarsCounter   int
+	FloatVarsCounter int
 }
 
 type SymbolTable struct {
@@ -123,12 +125,28 @@ func (st *SymbolTable) AddFunction(name string, params []Variable, line, column 
 	st.variables[name] = make(map[string]interface{})
 
 	// Add function to global scope
+
+	intCount := 0
+	floatCount := 0
+
+	// Count parameters by type
+	for _, param := range params {
+		switch param.Type {
+		case shared.TypeInt:
+			intCount++
+		case shared.TypeFloat:
+			floatCount++
+		}
+	}
+
 	st.variables["global"][name] = Function{
-		Name:       name,
-		Parameters: params,
-		Line:       line,
-		Column:     column,
-		StartQuad:  -1,
+		Name:             name,
+		Parameters:       params,
+		Line:             line,
+		Column:           column,
+		StartQuad:        -1,
+		IntVarsCounter:   intCount,
+		FloatVarsCounter: floatCount,
 	}
 
 	// Add parameters to function scope
@@ -137,6 +155,39 @@ func (st *SymbolTable) AddFunction(name string, params []Variable, line, column 
 	}
 
 	return nil
+}
+
+func (st *SymbolTable) IncrementFunctionVarCount(varType shared.Type) error {
+	if st.currentScope == "global" {
+		return fmt.Errorf("cannot increment function variable count in global scope")
+	}
+
+	function, ok := st.variables["global"][st.currentScope].(Function)
+	if !ok {
+		return fmt.Errorf("current scope is not a function")
+	}
+
+	switch varType {
+	case shared.TypeInt:
+		function.IntVarsCounter++
+	case shared.TypeFloat:
+		function.FloatVarsCounter++
+	default:
+		return fmt.Errorf("unsupported variable type for counting")
+	}
+
+	// Update the function in global scope
+	st.variables["global"][st.currentScope] = function
+	return nil
+}
+
+func (st *SymbolTable) GetFunctionVarCounts(functionName string) (int, int, error) {
+	function, ok := st.variables["global"][functionName].(Function)
+	if !ok {
+		return 0, 0, fmt.Errorf("function %s not found", functionName)
+	}
+
+	return function.IntVarsCounter, function.FloatVarsCounter, nil
 }
 
 func (st *SymbolTable) UpdateFunctionStartQuad(functionName string, start int) error {
@@ -310,6 +361,7 @@ func (st *SymbolTable) PrettyPrint() {
 				fmt.Printf("    - %s: %s\n", param.Name, param.Type)
 			}
 			fmt.Printf("  Line: %d, Column: %d\n", v.Line, v.Column)
+			fmt.Printf("Size int: %d, float: %d", v.IntVarsCounter, v.FloatVarsCounter)
 		}
 		fmt.Println()
 	}

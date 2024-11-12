@@ -12,21 +12,21 @@ type Parser struct {
 	lexer         *lexer.Lexer
 	curr          *token.Token
 	symbolTable   *semantic.SymbolTable
-	codeGenerator *semantic.QuadrupleList
+	CodeGenerator *semantic.QuadrupleList
 }
 
 func NewParser(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		lexer:         l,
 		symbolTable:   semantic.NewSymbolTable(),
-		codeGenerator: semantic.NewQuadrupleList(),
+		CodeGenerator: semantic.NewQuadrupleList(),
 	}
 	p.next() // prime first token
 	return p
 }
 
 func (p *Parser) ParseProgram() error {
-	p.codeGenerator.HandleProgramStart()
+	p.CodeGenerator.HandleProgramStart()
 
 	if err := p.parseProgramName(); err != nil {
 		return err
@@ -43,8 +43,9 @@ func (p *Parser) ParseProgram() error {
 	if err := p.parseMainSection(); err != nil {
 		return err
 	}
-	p.codeGenerator.Print()
-	p.codeGenerator.PrintStacks()
+	// p.symbolTable.PrettyPrint()
+	p.CodeGenerator.Print()
+	p.CodeGenerator.PrintStacks()
 
 	return nil
 }
@@ -189,7 +190,7 @@ func (p *Parser) parseFunction() error {
 		return err
 	}
 
-	p.codeGenerator.MemoryManager.PushNewFunctionSegment()
+	p.CodeGenerator.MemoryManager.PushNewFunctionSegment(true, 0, 0)
 
 	params, err := p.parseParameterList()
 	if err != nil {
@@ -208,7 +209,7 @@ func (p *Parser) parseFunction() error {
 		return err
 	}
 
-	functionStartQuad := len(p.codeGenerator.Quads)
+	functionStartQuad := len(p.CodeGenerator.Quads)
 	if err := p.symbolTable.UpdateFunctionStartQuad(string(functionId), functionStartQuad); err != nil {
 		return err
 	}
@@ -217,12 +218,14 @@ func (p *Parser) parseFunction() error {
 		return err
 	}
 
-	if err := p.codeGenerator.HandleENDPROC(); err != nil {
+	if err := p.CodeGenerator.HandleENDPROC(); err != nil {
 		return err
 	}
-	if err := p.codeGenerator.MemoryManager.PopFunctionSegment(); err != nil {
+
+	if err := p.CodeGenerator.MemoryManager.PopFunctionSegment(); err != nil {
 		return err
 	}
+
 	if err := p.expect(token.TokMap.Type("terminator")); err != nil {
 		return err
 	}
@@ -244,7 +247,7 @@ func (p *Parser) parseParameterList() ([]semantic.Variable, error) {
 	}
 
 	semType, err := p.returnSemanticType(currType)
-	addr, err := p.codeGenerator.MemoryManager.AllocateLocal(semType)
+	addr, err := p.CodeGenerator.MemoryManager.AllocateLocal(semType)
 
 	if err != nil {
 		return []semantic.Variable{}, err
@@ -271,7 +274,7 @@ func (p *Parser) parseParameterList() ([]semantic.Variable, error) {
 		if err != nil {
 			return []semantic.Variable{}, err
 		}
-		addr, err := p.codeGenerator.MemoryManager.AllocateLocal(semType)
+		addr, err := p.CodeGenerator.MemoryManager.AllocateLocal(semType)
 		if err != nil {
 			return []semantic.Variable{}, err
 		}
@@ -395,7 +398,7 @@ func (p *Parser) parseStatement() error {
 
 func (p *Parser) parseAssignment(id, nextToken *token.Token) error {
 	if nextToken.Type != token.TokMap.Type("assignOp") {
-		return fmt.Errorf("Expected =, got %v at line %d, column %d", nextToken.Type, nextToken.Line, nextToken.Column)
+		return fmt.Errorf("expected =, got %v at line %d, column %d", nextToken.Type, nextToken.Line, nextToken.Column)
 	}
 	p.next()
 
@@ -411,7 +414,7 @@ func (p *Parser) parseAssignment(id, nextToken *token.Token) error {
 	}
 
 	// fmt.Println("The expression type is ", exprType, "and the tok", string(id.Lit))
-	if err := p.codeGenerator.HandleAssignment(targetAddr, currType); err != nil {
+	if err := p.CodeGenerator.HandleAssignment(targetAddr, currType); err != nil {
 		return err
 	}
 	if err := p.expect(token.TokMap.Type("terminator")); err != nil {
@@ -426,7 +429,7 @@ func (p *Parser) parseWhileStatement() error {
 		return err
 	}
 
-	startIndex := p.codeGenerator.HandleWhileStart()
+	startIndex := p.CodeGenerator.HandleWhileStart()
 
 	if err := p.expect(token.TokMap.Type("openParan")); err != nil {
 		return err
@@ -438,7 +441,7 @@ func (p *Parser) parseWhileStatement() error {
 	}
 
 	// QUADS
-	if err := p.codeGenerator.HandleWhileCondition(); err != nil {
+	if err := p.CodeGenerator.HandleWhileCondition(); err != nil {
 		return err
 	}
 
@@ -450,7 +453,7 @@ func (p *Parser) parseWhileStatement() error {
 		return err
 	}
 
-	if err := p.codeGenerator.HandleWhileEnd(startIndex); err != nil {
+	if err := p.CodeGenerator.HandleWhileEnd(startIndex); err != nil {
 		return err
 	}
 
@@ -476,7 +479,7 @@ func (p *Parser) parseIfStatement() error {
 	}
 
 	// QUADS
-	if err := p.codeGenerator.HandleIfStatement(); err != nil {
+	if err := p.CodeGenerator.HandleIfStatement(); err != nil {
 		return err
 	}
 
@@ -486,7 +489,7 @@ func (p *Parser) parseIfStatement() error {
 
 	if p.curr.Type == token.TokMap.Type("kwdElse") {
 		p.next()
-		if err := p.codeGenerator.HandleElse(); err != nil {
+		if err := p.CodeGenerator.HandleElse(); err != nil {
 			return err
 		}
 
@@ -494,14 +497,14 @@ func (p *Parser) parseIfStatement() error {
 			return err
 		}
 
-		if err := p.codeGenerator.HandleEndIf(); err != nil {
+		if err := p.CodeGenerator.HandleEndIf(); err != nil {
 			return err
 		}
 
 		return nil
 	}
 
-	if err := p.codeGenerator.HandleEndIf(); err != nil {
+	if err := p.CodeGenerator.HandleEndIf(); err != nil {
 		return err
 	}
 
@@ -530,7 +533,7 @@ func (p *Parser) parseFunctionCall(id *token.Token) error {
 	if err := p.expect(token.TokMap.Type("openParan")); err != nil {
 		return err
 	}
-	if err := p.codeGenerator.HandleERA(functionName); err != nil {
+	if err := p.CodeGenerator.HandleERA(functionName); err != nil {
 		return err
 	}
 	// Logic to verify with symbol table pending
@@ -554,7 +557,7 @@ func (p *Parser) parseFunctionCall(id *token.Token) error {
 		return err
 	}
 
-	if err := p.codeGenerator.HandleGOSUB(string(id.Lit), startQuad); err != nil {
+	if err := p.CodeGenerator.HandleGOSUB(string(id.Lit), startQuad); err != nil {
 		return err
 	}
 
@@ -572,10 +575,10 @@ func (p *Parser) parseArgumentList() ([]shared.Type, error) {
 		return []shared.Type{}, err
 	}
 
-	if !p.codeGenerator.OperandStack.IsEmpty() {
-		arg := p.codeGenerator.OperandStack.Pop()
-		p.codeGenerator.TypeStack.Pop()
-		if err := p.codeGenerator.HandleParam(arg, paramCount); err != nil {
+	if !p.CodeGenerator.OperandStack.IsEmpty() {
+		arg := p.CodeGenerator.OperandStack.Pop()
+		p.CodeGenerator.TypeStack.Pop()
+		if err := p.CodeGenerator.HandleParam(arg, paramCount); err != nil {
 			return []shared.Type{}, err
 		}
 		paramCount++
@@ -591,10 +594,10 @@ func (p *Parser) parseArgumentList() ([]shared.Type, error) {
 			return []shared.Type{}, err
 		}
 
-		if !p.codeGenerator.OperandStack.IsEmpty() {
-			arg := p.codeGenerator.OperandStack.Pop()
-			p.codeGenerator.TypeStack.Pop()
-			if err := p.codeGenerator.HandleParam(arg, paramCount); err != nil {
+		if !p.CodeGenerator.OperandStack.IsEmpty() {
+			arg := p.CodeGenerator.OperandStack.Pop()
+			p.CodeGenerator.TypeStack.Pop()
+			if err := p.CodeGenerator.HandleParam(arg, paramCount); err != nil {
 				return []shared.Type{}, err
 			}
 			paramCount++
@@ -622,7 +625,7 @@ func (p *Parser) parsePrintList() error {
 func (p *Parser) parsePrintItem() error {
 
 	if p.curr.Type == token.TokMap.Type("stringLit") {
-		if err := p.codeGenerator.HandlePrint(string(p.curr.Lit)); err != nil {
+		if err := p.CodeGenerator.HandlePrint(string(p.curr.Lit)); err != nil {
 			return err
 		}
 		p.next()
@@ -634,13 +637,13 @@ func (p *Parser) parsePrintItem() error {
 		return err
 	}
 
-	if p.codeGenerator.OperandStack.IsEmpty() {
+	if p.CodeGenerator.OperandStack.IsEmpty() {
 		return fmt.Errorf("missing expression result for print statement")
 	}
-	result := p.codeGenerator.OperandStack.Pop()
-	p.codeGenerator.TypeStack.Pop()
+	result := p.CodeGenerator.OperandStack.Pop()
+	p.CodeGenerator.TypeStack.Pop()
 
-	if err := p.codeGenerator.HandlePrint(result); err != nil {
+	if err := p.CodeGenerator.HandlePrint(result); err != nil {
 		return err
 	}
 
@@ -659,7 +662,7 @@ func (p *Parser) parseExpression() (shared.Type, error) {
 
 	if p.curr.Type == token.TokMap.Type("relOp") {
 		operator := string(p.curr.Lit)
-		p.codeGenerator.OperatorStack.Push(operator)
+		p.CodeGenerator.OperatorStack.Push(operator)
 		p.next()
 
 		_, err := p.parseExp()
@@ -667,7 +670,7 @@ func (p *Parser) parseExpression() (shared.Type, error) {
 			return shared.TypeError, err
 		}
 
-		if err := p.codeGenerator.HandleOp(); err != nil {
+		if err := p.CodeGenerator.HandleOp(); err != nil {
 			return shared.TypeError, err
 		}
 
@@ -687,14 +690,14 @@ func (p *Parser) parseExp() (shared.Type, error) {
 		operator := string(p.curr.Lit)
 		p.next()
 
-		p.codeGenerator.OperatorStack.Push(operator)
+		p.CodeGenerator.OperatorStack.Push(operator)
 
 		rightType, err := p.parseTerm()
 		if err != nil {
 			return shared.TypeError, err
 		}
 
-		if err := p.codeGenerator.HandleOp(); err != nil {
+		if err := p.CodeGenerator.HandleOp(); err != nil {
 			return shared.TypeError, err
 		}
 
@@ -719,11 +722,11 @@ func (p *Parser) parseTerm() (shared.Type, error) {
 		operator := string(p.curr.Lit)
 		p.next()
 
-		p.codeGenerator.OperatorStack.Push(operator)
+		p.CodeGenerator.OperatorStack.Push(operator)
 
 		rightType, err := p.parseTerm()
 
-		if err := p.codeGenerator.HandleOp(); err != nil {
+		if err := p.CodeGenerator.HandleOp(); err != nil {
 			return shared.TypeError, err
 		}
 
@@ -745,7 +748,7 @@ func (p *Parser) parseTerm() (shared.Type, error) {
 func (p *Parser) parseFactor() (shared.Type, error) {
 	switch p.curr.Type {
 	case token.TokMap.Type("openParan"):
-		p.codeGenerator.HandleOpenParen()
+		p.CodeGenerator.HandleOpenParen()
 		p.next()
 		exprType, err := p.parseExpression()
 		if err != nil {
@@ -753,7 +756,7 @@ func (p *Parser) parseFactor() (shared.Type, error) {
 		}
 
 		if p.curr.Type == token.TokMap.Type("closeParan") {
-			if err := p.codeGenerator.HandleCloseParen(); err != nil {
+			if err := p.CodeGenerator.HandleCloseParen(); err != nil {
 				return exprType, err
 			}
 		}
@@ -780,7 +783,7 @@ func (p *Parser) parseFactor() (shared.Type, error) {
 				litSymbol = ""
 			}
 
-			if err := p.codeGenerator.HandleFactor(litSymbol+string(tok.Lit), tokType, p.symbolTable); err != nil {
+			if err := p.CodeGenerator.HandleFactor(litSymbol+string(tok.Lit), tokType, p.symbolTable); err != nil {
 				return shared.TypeError, err
 			}
 			return tokType, nil
@@ -793,7 +796,7 @@ func (p *Parser) parseFactor() (shared.Type, error) {
 		if err != nil {
 			return shared.TypeError, err
 		}
-		if err := p.codeGenerator.HandleFactor(string(tok.Lit), tokType, p.symbolTable); err != nil {
+		if err := p.CodeGenerator.HandleFactor(string(tok.Lit), tokType, p.symbolTable); err != nil {
 			return shared.TypeError, err
 		}
 		return tokType, nil
@@ -808,8 +811,8 @@ func (p *Parser) parseMainSection() error {
 		return err
 	}
 
-	mainQuadIndex := len(p.codeGenerator.Quads)
-	p.codeGenerator.Quads[0].Result = mainQuadIndex
+	mainQuadIndex := len(p.CodeGenerator.Quads)
+	p.CodeGenerator.Quads[0].Result = mainQuadIndex
 
 	if err := p.parseStatementList(); err != nil {
 		return err

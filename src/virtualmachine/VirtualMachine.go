@@ -9,20 +9,25 @@ import (
 type VirtualMachine struct {
 	quads              []shared.Quadruple
 	memoryManager      *MemoryManager
+	Functions          map[string]shared.FunctionInfo
 	instructionPointer int
-	returnPointer      int
+	returnPointer      *shared.Stack
+	currFunction       string
 }
 
 func NewVirtualMachine(quads []shared.Quadruple, memManager *MemoryManager) *VirtualMachine {
 	return &VirtualMachine{
 		quads:              quads,
 		memoryManager:      memManager,
-		instructionPointer: 1,
-		returnPointer:      -1,
+		instructionPointer: 0,
+		returnPointer:      shared.NewStack(),
+		Functions:          make(map[string]shared.FunctionInfo),
 	}
 }
 
 func (vm *VirtualMachine) Execute() error {
+	//fmt.Println("These are the quads", vm.quads)
+	// fmt.Println("These are the functions", vm.Functions)
 	for vm.instructionPointer < len(vm.quads) {
 		quad := vm.quads[vm.instructionPointer]
 
@@ -38,6 +43,7 @@ func (vm *VirtualMachine) Execute() error {
 func (vm *VirtualMachine) executeQuadruple(quad shared.Quadruple) error {
 	switch quad.Operator {
 	case "+", "-", "*", "/":
+		// fmt.Println("Entering with", quad.Operator)
 		return vm.executeArithmetic(quad)
 	case "=":
 		return vm.executeAssignment(quad)
@@ -48,7 +54,15 @@ func (vm *VirtualMachine) executeQuadruple(quad shared.Quadruple) error {
 	case "goto":
 		return vm.executeGoto(quad)
 	case "gotof":
-		return vm.executeGotof(quad)
+		return vm.executeGotoF(quad)
+	case "gosub":
+		return vm.executeGosub(quad)
+	case "era":
+		return vm.executeEra(quad)
+	case "endproc":
+		return vm.executeEndproc(quad)
+	case "param":
+		return vm.executeParam(quad)
 	}
 
 	return nil
@@ -114,7 +128,6 @@ func (vm *VirtualMachine) executeArithmetic(quad shared.Quadruple) error {
 			result = left / right
 		}
 	}
-
 	// Store result in memory
 	return vm.memoryManager.Store(quad.Result.(int), result)
 }
@@ -130,7 +143,7 @@ func (vm *VirtualMachine) executeAssignment(quad shared.Quadruple) error {
 func (vm *VirtualMachine) executeComparison(quad shared.Quadruple) error {
 	// fmt.Println("Entering execution")
 	leftVal, err := vm.memoryManager.Load(quad.LeftOp.(int))
-	fmt.Println("This is the leftVal", leftVal)
+
 	if err != nil {
 		return fmt.Errorf("failed to load left operand: %v", err)
 	}
@@ -189,7 +202,6 @@ func (vm *VirtualMachine) executePrint(quad shared.Quadruple) error {
 	if err != nil {
 		return fmt.Errorf("failed to load print value: %v", err)
 	}
-
 	switch v := value.(type) {
 	case string:
 		cleanStr := strings.Trim(v, "\"")
@@ -206,11 +218,11 @@ func (vm *VirtualMachine) executePrint(quad shared.Quadruple) error {
 }
 
 func (vm *VirtualMachine) executeGoto(quad shared.Quadruple) error {
-	vm.instructionPointer = quad.Result.(int)
+	vm.instructionPointer = quad.Result.(int) - 1
 	return nil
 }
 
-func (vm *VirtualMachine) executeGotof(quad shared.Quadruple) error {
+func (vm *VirtualMachine) executeGotoF(quad shared.Quadruple) error {
 	condValue, err := vm.memoryManager.Load(quad.LeftOp.(int))
 	if err != nil {
 		return err
@@ -220,5 +232,53 @@ func (vm *VirtualMachine) executeGotof(quad shared.Quadruple) error {
 		vm.instructionPointer = quad.Result.(int) - 1
 	}
 
+	return nil
+}
+
+func (vm *VirtualMachine) executeParam(quad shared.Quadruple) error {
+	valueAddr := quad.LeftOp.(int)
+	value, err := vm.memoryManager.Load(valueAddr)
+	if err != nil {
+		return err
+	}
+
+	function, exists := vm.Functions[vm.currFunction]
+	if exists {
+		index := quad.RightOp.(int)
+		currParam := function.Parameters[index]
+		currParamAddr := currParam.Address
+		if err := vm.memoryManager.Store(currParamAddr, value); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("function does not exist")
+	}
+	return nil
+}
+
+func (vm *VirtualMachine) executeEra(quad shared.Quadruple) error {
+	functionName := quad.LeftOp.(string)
+	vm.currFunction = functionName
+	functionInfo, exists := vm.Functions[functionName]
+	if exists {
+		vm.memoryManager.PushNewFunctionSegment(false, functionInfo.IntVarsCount, functionInfo.FloatVarsCount)
+	} else {
+		return fmt.Errorf("function does not exist")
+	}
+	return nil
+}
+
+func (vm *VirtualMachine) executeEndproc(quad shared.Quadruple) error {
+	vm.instructionPointer = vm.returnPointer.Pop().(int)
+	if err := vm.memoryManager.PopFunctionSegment(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (vm *VirtualMachine) executeGosub(quad shared.Quadruple) error {
+	start := quad.Result
+	vm.returnPointer.Push(vm.instructionPointer)
+	vm.instructionPointer = start.(int) - 1
 	return nil
 }

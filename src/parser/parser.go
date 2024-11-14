@@ -11,14 +11,14 @@ import (
 type Parser struct {
 	lexer         *lexer.Lexer
 	curr          *token.Token
-	symbolTable   *semantic.SymbolTable
+	SymbolTable   *semantic.SymbolTable
 	CodeGenerator *semantic.QuadrupleList
 }
 
 func NewParser(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		lexer:         l,
-		symbolTable:   semantic.NewSymbolTable(),
+		SymbolTable:   semantic.NewSymbolTable(),
 		CodeGenerator: semantic.NewQuadrupleList(),
 	}
 	p.next() // prime first token
@@ -43,7 +43,7 @@ func (p *Parser) ParseProgram() error {
 	if err := p.parseMainSection(); err != nil {
 		return err
 	}
-	// p.symbolTable.PrettyPrint()
+	// p.SymbolTable.PrettyPrint()
 	p.CodeGenerator.Print()
 	p.CodeGenerator.PrintStacks()
 
@@ -197,11 +197,11 @@ func (p *Parser) parseFunction() error {
 		return err
 	}
 
-	if err := p.symbolTable.AddFunction(string(functionId), params, p.curr.Line, p.curr.Column); err != nil {
+	if err := p.SymbolTable.AddFunction(string(functionId), params, p.curr.Line, p.curr.Column); err != nil {
 		return err
 	}
 
-	if err := p.symbolTable.EnterFunctionScope(string(functionId)); err != nil {
+	if err := p.SymbolTable.EnterFunctionScope(string(functionId)); err != nil {
 		return err
 	}
 
@@ -210,7 +210,7 @@ func (p *Parser) parseFunction() error {
 	}
 
 	functionStartQuad := len(p.CodeGenerator.Quads)
-	if err := p.symbolTable.UpdateFunctionStartQuad(string(functionId), functionStartQuad); err != nil {
+	if err := p.SymbolTable.UpdateFunctionStartQuad(string(functionId), functionStartQuad); err != nil {
 		return err
 	}
 
@@ -230,30 +230,30 @@ func (p *Parser) parseFunction() error {
 		return err
 	}
 
-	p.symbolTable.ExitFunctionScope()
+	p.SymbolTable.ExitFunctionScope()
 	return p.parseFunctionList()
 }
 
-func (p *Parser) parseParameterList() ([]semantic.Variable, error) {
+func (p *Parser) parseParameterList() ([]shared.Variable, error) {
 	if p.curr.Type == token.TokMap.Type("closeParan") {
-		return []semantic.Variable{}, nil
+		return []shared.Variable{}, nil
 	}
 
-	currentParams := make([]semantic.Variable, 0)
+	currentParams := make([]shared.Variable, 0)
 	currId := p.curr
 	currType, err := p.parseParameter()
 	if err != nil {
-		return []semantic.Variable{}, err
+		return []shared.Variable{}, err
 	}
 
 	semType, err := p.returnSemanticType(currType)
 	addr, err := p.CodeGenerator.MemoryManager.AllocateLocal(semType)
 
 	if err != nil {
-		return []semantic.Variable{}, err
+		return []shared.Variable{}, err
 	}
 
-	currentParams = append(currentParams, semantic.Variable{
+	currentParams = append(currentParams, shared.Variable{
 		Name:    string(currId.Lit),
 		Type:    semType,
 		Line:    currId.Line,
@@ -262,7 +262,7 @@ func (p *Parser) parseParameterList() ([]semantic.Variable, error) {
 	})
 
 	if err != nil {
-		return []semantic.Variable{}, err
+		return []shared.Variable{}, err
 	}
 
 	for p.curr.Type == token.TokMap.Type("repeatTerminator") {
@@ -272,13 +272,13 @@ func (p *Parser) parseParameterList() ([]semantic.Variable, error) {
 		semType, err := p.returnSemanticType(currType)
 
 		if err != nil {
-			return []semantic.Variable{}, err
+			return []shared.Variable{}, err
 		}
 		addr, err := p.CodeGenerator.MemoryManager.AllocateLocal(semType)
 		if err != nil {
-			return []semantic.Variable{}, err
+			return []shared.Variable{}, err
 		}
-		currentParams = append(currentParams, semantic.Variable{
+		currentParams = append(currentParams, shared.Variable{
 			Name:    string(currId.Lit),
 			Type:    semType,
 			Line:    currId.Line,
@@ -287,7 +287,7 @@ func (p *Parser) parseParameterList() ([]semantic.Variable, error) {
 		})
 
 		if err != nil {
-			return []semantic.Variable{}, err
+			return []shared.Variable{}, err
 		}
 	}
 
@@ -385,12 +385,12 @@ func (p *Parser) parseStatement() error {
 		if nextToken.Type == token.TokMap.Type("openParan") {
 			return p.parseFunctionCall(idToken)
 		} else if nextToken.Type == token.TokMap.Type("assignOp") {
-			if err := p.symbolTable.ValidateVarAssignment(string(idToken.Lit), idToken.Line); err != nil {
+			if err := p.SymbolTable.ValidateVarAssignment(string(idToken.Lit), idToken.Line); err != nil {
 				return err
 			}
 			return p.parseAssignment(idToken, nextToken)
 		} else {
-			return fmt.Errorf("Expected either = or (, got %v at line %d, column %d", token.TokMap.Id(nextToken.Type), nextToken.Line, nextToken.Column)
+			return fmt.Errorf("expected either = or (, got %v at line %d, column %d", token.TokMap.Id(nextToken.Type), nextToken.Line, nextToken.Column)
 		}
 	}
 	return nil
@@ -403,12 +403,12 @@ func (p *Parser) parseAssignment(id, nextToken *token.Token) error {
 	p.next()
 
 	_, err := p.parseExpression()
-	currType, err := p.symbolTable.GetType(string(id.Lit))
+	currType, err := p.SymbolTable.GetType(string(id.Lit))
 	if err != nil {
 		return err
 	}
 
-	targetAddr, err := p.symbolTable.GetVariableAddress(string(id.Lit))
+	targetAddr, err := p.SymbolTable.GetVariableAddress(string(id.Lit))
 	if err != nil {
 		return err
 	}
@@ -536,9 +536,9 @@ func (p *Parser) parseFunctionCall(id *token.Token) error {
 	if err := p.CodeGenerator.HandleERA(functionName); err != nil {
 		return err
 	}
-	// Logic to verify with symbol table pending
-	arguments, err := p.parseArgumentList()
 
+	arguments, err := p.parseArgumentList()
+	fmt.Println("This are the arguments", arguments)
 	if err != nil {
 		return err
 	}
@@ -547,11 +547,11 @@ func (p *Parser) parseFunctionCall(id *token.Token) error {
 		return err
 	}
 
-	if err := p.symbolTable.ValidateFunctionCall(string(id.Lit), id.Line, arguments); err != nil {
+	if err := p.SymbolTable.ValidateFunctionCall(string(id.Lit), id.Line, arguments); err != nil {
 		return err
 	}
 
-	startQuad, err := p.symbolTable.GetFunctionStartQuad(string(id.Lit))
+	startQuad, err := p.SymbolTable.GetFunctionStartQuad(string(id.Lit))
 
 	if err != nil {
 		return err
@@ -602,7 +602,8 @@ func (p *Parser) parseArgumentList() ([]shared.Type, error) {
 			}
 			paramCount++
 		}
-		argumentTypes = append(argumentTypes, argType)
+
+		//argumentTypes = append(argumentTypes, argType)
 	}
 	return argumentTypes, nil
 }
@@ -765,27 +766,45 @@ func (p *Parser) parseFactor() (shared.Type, error) {
 		}
 		return exprType, nil
 	case token.TokMap.Type("expressionOp"):
-		litSymbol := string(p.curr.Lit)
-		if string(p.curr.Lit) != "+" && string(p.curr.Lit) != "-" {
-			return shared.TypeError, fmt.Errorf("unexpected operator: %s", p.curr.Lit)
-		}
+		isNegative := string(p.curr.Lit) == "-"
 		p.next()
 
 		switch p.curr.Type {
 		// Logic for negatives??? Plus sign should be parsed but ignored.
-		case token.TokMap.Type("id"), token.TokMap.Type("intLit"), token.TokMap.Type("floatLit"):
+		// Pending logic for negative ids
+		case token.TokMap.Type("intLit"), token.TokMap.Type("floatLit"):
 			tok := p.curr
 			tokType, err := p.getType(p.curr)
 			if err != nil {
 				return shared.TypeError, err
 			}
-			if litSymbol == "+" {
-				litSymbol = ""
+
+			value := string(tok.Lit)
+			if isNegative {
+				value = "-" + value
 			}
 
-			if err := p.CodeGenerator.HandleFactor(litSymbol+string(tok.Lit), tokType, p.symbolTable); err != nil {
+			if err := p.CodeGenerator.HandleFactor(value, tokType, p.SymbolTable); err != nil {
 				return shared.TypeError, err
 			}
+
+			return tokType, nil
+		case token.TokMap.Type("id"):
+			tok := p.curr
+			tokType, err := p.getType(p.curr)
+			if err != nil {
+				return shared.TypeError, err
+			}
+			if err := p.CodeGenerator.HandleFactor(string(tok.Lit), tokType, p.SymbolTable); err != nil {
+				return shared.TypeError, err
+			}
+
+			if isNegative {
+				if err := p.CodeGenerator.HandleNegation(); err != nil {
+					return shared.TypeError, err
+				}
+			}
+
 			return tokType, nil
 		default:
 			return shared.TypeError, fmt.Errorf("expected number after %s", p.curr.Lit)
@@ -796,12 +815,12 @@ func (p *Parser) parseFactor() (shared.Type, error) {
 		if err != nil {
 			return shared.TypeError, err
 		}
-		if err := p.CodeGenerator.HandleFactor(string(tok.Lit), tokType, p.symbolTable); err != nil {
+		if err := p.CodeGenerator.HandleFactor(string(tok.Lit), tokType, p.SymbolTable); err != nil {
 			return shared.TypeError, err
 		}
 		return tokType, nil
 	default:
-		return shared.TypeError, fmt.Errorf("unexpected token in factor: %v in line %l and %t",
+		return shared.TypeError, fmt.Errorf("unexpected token in factor: %v in line %v and %v",
 			token.TokMap.Id(p.curr.Type), p.curr.Line, string(p.curr.Lit))
 	}
 }

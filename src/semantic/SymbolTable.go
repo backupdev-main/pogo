@@ -5,26 +5,6 @@ import (
 	"pogo/src/shared"
 )
 
-// Variable represents a variable in our symbol table
-type Variable struct {
-	Name    string
-	Type    shared.Type
-	Line    int
-	Column  int
-	Address int
-}
-
-// Function represents a function in our function directory
-type Function struct {
-	Name             string
-	Parameters       []Variable
-	Line             int
-	Column           int
-	StartQuad        int
-	IntVarsCounter   int
-	FloatVarsCounter int
-}
-
 type SymbolTable struct {
 	variables    map[string]map[string]interface{}
 	scopeStack   []string
@@ -49,7 +29,7 @@ func (st *SymbolTable) GetType(name string) (shared.Type, error) {
 
 	if symbol, exists := st.variables[st.currentScope][name]; exists {
 		switch v := symbol.(type) {
-		case Variable:
+		case shared.Variable:
 			return v.Type, nil
 		default:
 			return shared.TypeError, fmt.Errorf("symbol '%s' is not a variable", name)
@@ -59,7 +39,7 @@ func (st *SymbolTable) GetType(name string) (shared.Type, error) {
 	if st.currentScope != "global" {
 		if symbol, exists := st.variables["global"][name]; exists {
 			switch v := symbol.(type) {
-			case Variable:
+			case shared.Variable:
 				return v.Type, nil
 			default:
 				return shared.TypeError, fmt.Errorf("symbol '%s' is not a variable", name)
@@ -76,14 +56,14 @@ func (st *SymbolTable) GetVariableAddress(name string) (int, error) {
 	value, exists := st.variables[st.currentScope][name]
 	if exists {
 		// then we should look for the value in global scope
-		if v, ok := value.(Variable); ok {
+		if v, ok := value.(shared.Variable); ok {
 			return v.Address, nil
 		}
 	}
 
 	if st.currentScope != "global" {
 		if value, exists := st.variables["global"][name]; exists {
-			if v, ok := value.(Variable); ok {
+			if v, ok := value.(shared.Variable); ok {
 				return v.Address, nil
 			}
 		}
@@ -106,7 +86,7 @@ func (st *SymbolTable) AddVariable(name string, varType shared.Type, line, colum
 		return fmt.Errorf("line %d: symbol '%s' already declared in current scope", line, name)
 	}
 
-	st.variables[st.currentScope][name] = Variable{
+	st.variables[st.currentScope][name] = shared.Variable{
 		Name:    name,
 		Type:    varType,
 		Line:    line,
@@ -117,7 +97,7 @@ func (st *SymbolTable) AddVariable(name string, varType shared.Type, line, colum
 	return nil
 }
 
-func (st *SymbolTable) AddFunction(name string, params []Variable, line, column int) error {
+func (st *SymbolTable) AddFunction(name string, params []shared.Variable, line, column int) error {
 	if _, exists := st.variables["global"][name]; exists {
 		return fmt.Errorf("line %d: symbol '%s' already declared", line, name)
 	}
@@ -139,7 +119,7 @@ func (st *SymbolTable) AddFunction(name string, params []Variable, line, column 
 		}
 	}
 
-	st.variables["global"][name] = Function{
+	st.variables["global"][name] = shared.Function{
 		Name:             name,
 		Parameters:       params,
 		Line:             line,
@@ -162,7 +142,7 @@ func (st *SymbolTable) IncrementFunctionVarCount(varType shared.Type) error {
 		return fmt.Errorf("cannot increment function variable count in global scope")
 	}
 
-	function, ok := st.variables["global"][st.currentScope].(Function)
+	function, ok := st.variables["global"][st.currentScope].(shared.Function)
 	if !ok {
 		return fmt.Errorf("current scope is not a function")
 	}
@@ -182,7 +162,7 @@ func (st *SymbolTable) IncrementFunctionVarCount(varType shared.Type) error {
 }
 
 func (st *SymbolTable) GetFunctionVarCounts(functionName string) (int, int, error) {
-	function, ok := st.variables["global"][functionName].(Function)
+	function, ok := st.variables["global"][functionName].(shared.Function)
 	if !ok {
 		return 0, 0, fmt.Errorf("function %s not found", functionName)
 	}
@@ -191,7 +171,7 @@ func (st *SymbolTable) GetFunctionVarCounts(functionName string) (int, int, erro
 }
 
 func (st *SymbolTable) UpdateFunctionStartQuad(functionName string, start int) error {
-	function, ok := st.variables["global"][functionName].(Function)
+	function, ok := st.variables["global"][functionName].(shared.Function)
 	if !ok {
 		return fmt.Errorf("function %s not found", functionName)
 	}
@@ -202,7 +182,7 @@ func (st *SymbolTable) UpdateFunctionStartQuad(functionName string, start int) e
 }
 
 func (st *SymbolTable) GetFunctionStartQuad(functionName string) (int, error) {
-	function, ok := st.variables["global"][functionName].(Function)
+	function, ok := st.variables["global"][functionName].(shared.Function)
 	fmt.Println("Function Name", functionName, function)
 	if !ok {
 		return -1, fmt.Errorf("function %s not found", functionName)
@@ -242,7 +222,7 @@ func (st *SymbolTable) ValidateVarAssignment(varName string, line int) error {
 	}
 
 	if symbol, exists := st.variables[st.currentScope][varName]; exists {
-		if _, ok := symbol.(Variable); !ok {
+		if _, ok := symbol.(shared.Variable); !ok {
 			return fmt.Errorf("line %d: '%s' is not a variable", line, varName)
 		}
 		return nil
@@ -251,7 +231,7 @@ func (st *SymbolTable) ValidateVarAssignment(varName string, line int) error {
 	// If not in current scope, check global
 	if st.currentScope != "global" {
 		if symbol, exists := st.variables["global"][varName]; exists {
-			if _, ok := symbol.(Variable); !ok {
+			if _, ok := symbol.(shared.Variable); !ok {
 				return fmt.Errorf("line %d: '%s' is not a variable", line, varName)
 			}
 			return nil
@@ -267,12 +247,14 @@ func (st *SymbolTable) ValidateFunctionCall(funcName string, line int, args []sh
 		return fmt.Errorf("line %d: undefined function '%s'", line, funcName)
 	}
 
-	function, ok := symbol.(Function)
+	function, ok := symbol.(shared.Function)
 	if !ok {
 		return fmt.Errorf("line %d: '%s' is not a function", line, funcName)
 	}
 
 	if len(function.Parameters) != len(args) {
+		fmt.Println(function.Parameters)
+		fmt.Println(args)
 		return fmt.Errorf("line %d: function '%s' expects %d arguments but got %d",
 			line, funcName, len(function.Parameters), len(args))
 	}
@@ -307,7 +289,7 @@ func (st *SymbolTable) EnterFunctionScope(name string) error {
 		return fmt.Errorf("cannot enter scope of undefined function '%s'", name)
 	}
 
-	if _, ok := st.variables["global"][name].(Function); !ok {
+	if _, ok := st.variables["global"][name].(shared.Function); !ok {
 		return fmt.Errorf("'%s' is not a function", name)
 	}
 
@@ -321,13 +303,13 @@ func (st *SymbolTable) EnterFunctionScope(name string) error {
 	return nil
 }
 
-func (st *SymbolTable) GetFunctionInfo(functionName string) (*Function, error) {
+func (st *SymbolTable) GetFunctionInfo(functionName string) (*shared.Function, error) {
 	symbol, exists := st.variables["global"][functionName]
 	if !exists {
 		return nil, fmt.Errorf("function %s not found", functionName)
 	}
 
-	funcInfo, ok := symbol.(Function)
+	funcInfo, ok := symbol.(shared.Function)
 	if !ok {
 		return nil, fmt.Errorf("%s is not a function", functionName)
 	}
@@ -342,16 +324,15 @@ func (st *SymbolTable) GetScope() string {
 func (st *SymbolTable) PrettyPrint() {
 	fmt.Println("\n=== Symbol Table ===")
 
-	// Print global scope first
 	fmt.Println("\nGlobal Scope:")
 	fmt.Println("-------------")
 	for name, symbol := range st.variables["global"] {
 		switch v := symbol.(type) {
-		case Variable:
+		case shared.Variable:
 			fmt.Printf("Variable: %s\n", name)
 			fmt.Printf("  Type: %s\n", v.Type)
 			fmt.Printf("  Line: %d, Column: %d\n", v.Line, v.Column)
-		case Function:
+		case shared.Function:
 			fmt.Printf("Function: %s\n", name)
 			fmt.Printf("  Parameters:\n")
 			if len(v.Parameters) == 0 {
@@ -373,7 +354,7 @@ func (st *SymbolTable) PrettyPrint() {
 			fmt.Println("------------------")
 			for name, symbol := range symbols {
 				switch v := symbol.(type) {
-				case Variable:
+				case shared.Variable:
 					fmt.Printf("Variable: %s\n", name)
 					fmt.Printf("  Type: %s\n", v.Type)
 					fmt.Printf("  Line: %d, Column: %d\n", v.Line, v.Column)
@@ -384,4 +365,8 @@ func (st *SymbolTable) PrettyPrint() {
 	}
 
 	fmt.Println("=== End Symbol Table ===")
+}
+
+func (st *SymbolTable) GetGlobalScope() map[string]interface{} {
+	return st.variables["global"]
 }

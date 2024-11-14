@@ -55,7 +55,7 @@ type MemoryManager struct {
 	tempIntPtr   int
 	tempFloatPtr int
 
-	constantMemory   [MEMORY_SEGMENT_SIZE]interface{}
+	ConstantMemory   [MEMORY_SEGMENT_SIZE]interface{}
 	constantIntPtr   int
 	constantFloatPtr int
 	constantStrPtr   int
@@ -138,7 +138,7 @@ func (mm *MemoryManager) AllocateConstant(value string) (int, error) {
 		}
 		addr := mm.constantIntPtr
 		// fmt.Println("Allocating value ", intVal, "at ", addr-CONSTANT_START)
-		mm.constantMemory[addr-CONSTANT_START] = intVal
+		mm.ConstantMemory[addr-CONSTANT_START] = intVal
 		mm.constantMap[value] = addr
 		mm.constantIntPtr++
 		return addr, nil
@@ -149,7 +149,7 @@ func (mm *MemoryManager) AllocateConstant(value string) (int, error) {
 			return -1, fmt.Errorf("constant integer memory overflow")
 		}
 		addr := mm.constantFloatPtr
-		mm.constantMemory[addr-CONSTANT_START] = floatVal
+		mm.ConstantMemory[addr-CONSTANT_START] = floatVal
 		mm.constantMap[value] = addr
 		mm.constantFloatPtr++
 		return addr, nil
@@ -195,7 +195,7 @@ func (mm *MemoryManager) GetStringAddress(value string) (int, error) {
 	// Store the string in constant memory
 	// The offset should be relative to CONSTANT_START, not CONSTANT_STR_START
 	offset := addr - CONSTANT_START
-	mm.constantMemory[offset] = value
+	mm.ConstantMemory[offset] = value
 
 	// Add to map and increment pointer
 	mm.constantStringMap[value] = addr
@@ -212,10 +212,16 @@ func (mm *MemoryManager) Store(address int, value interface{}) error {
 	var offset int
 
 	if address >= LOCAL_START && address < LOCAL_START+MEMORY_SEGMENT_SIZE {
+		if address < LOCAL_FLOAT_START {
+			offset = address - LOCAL_START
+		} else {
+			offset = address - LOCAL_FLOAT_START + mm.currentSegment.intVarsCount
+		}
+
 		if mm.currentSegment == nil {
 			return fmt.Errorf("no active function segment")
 		}
-		offset = address - LOCAL_START
+
 		if offset >= len(mm.currentSegment.localMemory) {
 			return fmt.Errorf("local memory access out of bounds: %d", address)
 		}
@@ -226,7 +232,7 @@ func (mm *MemoryManager) Store(address int, value interface{}) error {
 
 	switch {
 	case address >= CONSTANT_START && address < CONSTANT_START+MEMORY_SEGMENT_SIZE:
-		segment = &mm.constantMemory
+		segment = &mm.ConstantMemory
 		offset = address - CONSTANT_START
 	case address >= TEMP_START && address < TEMP_START+MEMORY_SEGMENT_SIZE:
 		segment = &mm.tempMemory
@@ -279,10 +285,15 @@ func (mm *MemoryManager) Load(address int) (interface{}, error) {
 	var offset int
 
 	if address >= LOCAL_START && address < LOCAL_START+MEMORY_SEGMENT_SIZE {
+		if address < LOCAL_FLOAT_START {
+			offset = address - LOCAL_START
+		} else {
+			offset = address - LOCAL_FLOAT_START + mm.currentSegment.intVarsCount
+		}
+
 		if mm.currentSegment == nil {
 			return nil, fmt.Errorf("no active function segment")
 		}
-		offset = address - LOCAL_START
 		if offset >= len(mm.currentSegment.localMemory) {
 			return nil, fmt.Errorf("local memory access out of bounds: %d", address)
 		}
@@ -295,7 +306,7 @@ func (mm *MemoryManager) Load(address int) (interface{}, error) {
 
 	switch {
 	case address >= CONSTANT_START && address < CONSTANT_START+MEMORY_SEGMENT_SIZE:
-		segment = &mm.constantMemory
+		segment = &mm.ConstantMemory
 		offset = address - CONSTANT_START
 	case address >= TEMP_START && address < TEMP_START+MEMORY_SEGMENT_SIZE:
 		segment = &mm.tempMemory

@@ -31,10 +31,21 @@ type Variable struct {
 }
 
 type Function struct {
-	Name       string
-	Parameters []Variable
-	Line       int
-	Column     int
+	Name             string
+	Parameters       []Variable
+	Line             int
+	Column           int
+	StartQuad        int
+	IntVarsCounter   int
+	FloatVarsCounter int
+}
+
+type FunctionInfo struct {
+	Name           string
+	StartQuad      int
+	IntVarsCount   int
+	FloatVarsCount int
+	Parameters     []Variable
 }
 
 type Stack struct {

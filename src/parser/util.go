@@ -46,14 +46,14 @@ func (p *Parser) addVariablesToSymbolTable(semType shared.Type, currentVars []st
 		var addr int
 		var err error
 
-		if p.symbolTable.GetScope() == "global" {
+		if p.SymbolTable.GetScope() == "global" {
 			addr, err = p.CodeGenerator.MemoryManager.AllocateGlobal(semType)
 		} else {
 			addr, err = p.CodeGenerator.MemoryManager.AllocateLocal(semType)
 			if err != nil {
 				return err
 			}
-			if err := p.symbolTable.IncrementFunctionVarCount(semType); err != nil {
+			if err := p.SymbolTable.IncrementFunctionVarCount(semType); err != nil {
 				return err
 			}
 		}
@@ -62,7 +62,7 @@ func (p *Parser) addVariablesToSymbolTable(semType shared.Type, currentVars []st
 			return err
 		}
 
-		if err := p.symbolTable.AddVariable(varName, semType, p.curr.Line, p.curr.Column, addr); err != nil {
+		if err := p.SymbolTable.AddVariable(varName, semType, p.curr.Line, p.curr.Column, addr); err != nil {
 			return err
 		}
 	}
@@ -93,7 +93,7 @@ func (p *Parser) getType(tok *token.Token) (shared.Type, error) {
 		return shared.TypeFloat, nil
 	case token.TokMap.Type("id"):
 		p.next()
-		return p.symbolTable.GetType(string(tok.Lit))
+		return p.SymbolTable.GetType(string(tok.Lit))
 	default:
 		return shared.TypeError, fmt.Errorf("expected number after %s", p.curr.Lit)
 	}

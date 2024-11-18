@@ -538,7 +538,6 @@ func (p *Parser) parseFunctionCall(id *token.Token) error {
 	}
 
 	arguments, err := p.parseArgumentList()
-	fmt.Println("This are the arguments", arguments)
 	if err != nil {
 		return err
 	}
@@ -609,50 +608,57 @@ func (p *Parser) parseArgumentList() ([]shared.Type, error) {
 }
 
 func (p *Parser) parsePrintList() error {
-	if err := p.parsePrintItem(); err != nil {
+	printItems := make([]interface{}, 0)
+	item, err := p.parsePrintItem()
+	if err != nil {
 		return err
 	}
 
+	printItems = append(printItems, item)
+
 	for p.curr.Type == token.TokMap.Type("repeatTerminator") {
 		p.next()
-		if err := p.parsePrintItem(); err != nil {
+		item, err := p.parsePrintItem()
+		if err != nil {
 			return err
 		}
+		printItems = append(printItems, item)
 	}
 
+	if err := p.CodeGenerator.HandlePrint(printItems); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (p *Parser) parsePrintItem() error {
+func (p *Parser) parsePrintItem() (interface{}, error) {
 
 	if p.curr.Type == token.TokMap.Type("stringLit") {
-		if err := p.CodeGenerator.HandlePrint(string(p.curr.Lit)); err != nil {
-			return err
-		}
+		stringToSend := string(p.curr.Lit)
 		p.next()
-		return nil
+		return stringToSend, nil
 	}
 
 	_, err := p.parseExpression()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if p.CodeGenerator.OperandStack.IsEmpty() {
-		return fmt.Errorf("missing expression result for print statement")
+		return nil, fmt.Errorf("missing expression result for print statement")
 	}
 	result := p.CodeGenerator.OperandStack.Pop()
 	p.CodeGenerator.TypeStack.Pop()
 
-	if err := p.CodeGenerator.HandlePrint(result); err != nil {
-		return err
-	}
+	//if err := p.CodeGenerator.HandlePrint(result); err != nil {
+	//	return err
+	//}
+	//
+	//if err != nil {
+	//	return err
+	//}
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return result, nil
 }
 
 func (p *Parser) parseExpression() (shared.Type, error) {

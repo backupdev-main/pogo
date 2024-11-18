@@ -1,4 +1,4 @@
-package Storer
+package storer
 
 import (
 	"encoding/gob"
@@ -10,14 +10,13 @@ import (
 )
 
 type SerializedVMData struct {
-	Quadruples     []shared.Quadruple
-	Functions      map[string]shared.FunctionInfo
-	ConstantMemory [4000]interface{}
+	Quadruples    []shared.Quadruple
+	Functions     map[string]shared.FunctionInfo
+	MemoryManager *virtualmachine.MemoryManager
 }
 
 func SaveCompiledData(quads []shared.Quadruple, SymbolTable *semantic.SymbolTable, memoryManager *virtualmachine.MemoryManager, filename string) error {
 	functions := make(map[string]shared.FunctionInfo)
-
 	for name, symbol := range SymbolTable.GetGlobalScope() {
 		if function, ok := symbol.(shared.Function); ok {
 			functions[name] = shared.FunctionInfo{
@@ -31,9 +30,9 @@ func SaveCompiledData(quads []shared.Quadruple, SymbolTable *semantic.SymbolTabl
 	}
 
 	vmData := SerializedVMData{
-		Quadruples:     quads,
-		Functions:      functions,
-		ConstantMemory: memoryManager.ConstantMemory,
+		Quadruples:    quads,
+		Functions:     functions,
+		MemoryManager: memoryManager,
 	}
 
 	file, err := os.Create(filename)
@@ -44,7 +43,7 @@ func SaveCompiledData(quads []shared.Quadruple, SymbolTable *semantic.SymbolTabl
 
 	encoder := gob.NewEncoder(file)
 	if err := encoder.Encode(vmData); err != nil {
-		return fmt.Errorf("error encoding data: %v", err)
+		// return fmt.Errorf("error encoding data: %v", err)
 	}
 
 	return nil
@@ -65,8 +64,7 @@ func LoadCompiledData(filename string) (*virtualmachine.VirtualMachine, error) {
 		return nil, fmt.Errorf("error decoding data: %v", err)
 	}
 
-	memManager := virtualmachine.NewMemoryManager()
-	memManager.ConstantMemory = vmData.ConstantMemory
+	memManager := vmData.MemoryManager
 	vm := virtualmachine.NewVirtualMachine(vmData.Quadruples, memManager)
 
 	vm.Functions = vmData.Functions

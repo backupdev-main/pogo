@@ -3,9 +3,9 @@ package pogo_parser_tests
 import (
 	"fmt"
 	"os"
-	"pogo/src/Storer"
 	"pogo/src/lexer"
 	"pogo/src/parser"
+	"pogo/src/storer"
 	"testing"
 )
 
@@ -29,18 +29,18 @@ func TestParser(t *testing.T) {
 		fmt.Println("Input successfully parsed!")
 	}
 
-	if err := Storer.SaveCompiledData(p.CodeGenerator.Quads, p.SymbolTable, p.CodeGenerator.MemoryManager, "test.pbin"); err != nil {
+	if err := storer.SaveCompiledData(p.CodeGenerator.Quads, p.SymbolTable, p.CodeGenerator.MemoryManager, "test.pbin"); err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	vm, err := Storer.LoadCompiledData("test.pbin")
+	vm, err := storer.LoadCompiledData("test.pbin")
 	// fmt.Println(vm)
-
 	if err := vm.Execute(); err != nil {
 		fmt.Println(err)
 		return
 	}
+
 	//virtualMachine := virtualmachine.NewVirtualMachine(p.CodeGenerator.Quads, p.CodeGenerator.MemoryManager)
 	//if err := virtualMachine.Execute(); err != nil {
 	//	fmt.Println("Error during execution", err)

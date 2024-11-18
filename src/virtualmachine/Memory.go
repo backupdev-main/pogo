@@ -47,15 +47,15 @@ type FunctionMemorySegment struct {
 }
 
 type MemoryManager struct {
-	globalMemory   [MEMORY_SEGMENT_SIZE]interface{}
-	globalIntPtr   int
-	globalFloatPtr int
+	globalMemory   []interface{}
+	GlobalIntPtr   int
+	GlobalFloatPtr int
 
-	tempMemory   [MEMORY_SEGMENT_SIZE]interface{}
-	tempIntPtr   int
-	tempFloatPtr int
+	tempMemory   []interface{}
+	TempIntPtr   int
+	TempFloatPtr int
 
-	ConstantMemory   [MEMORY_SEGMENT_SIZE]interface{}
+	ConstantMemory   []interface{}
 	constantIntPtr   int
 	constantFloatPtr int
 	constantStrPtr   int
@@ -70,35 +70,50 @@ type MemoryManager struct {
 
 func NewMemoryManager() *MemoryManager {
 	return &MemoryManager{
-		globalIntPtr:      GLOBAL_INT_START,
-		globalFloatPtr:    GLOBAL_FLOAT_START,
-		tempIntPtr:        TEMP_INT_START,
-		tempFloatPtr:      TEMP_FLOAT_START,
+		GlobalIntPtr:      GLOBAL_INT_START,
+		GlobalFloatPtr:    GLOBAL_FLOAT_START,
+		TempIntPtr:        TEMP_INT_START,
+		TempFloatPtr:      TEMP_FLOAT_START,
 		constantIntPtr:    CONSTANT_INT_START,
 		constantFloatPtr:  CONSTANT_FLOAT_START,
 		constantStrPtr:    CONSTANT_STR_START,
 		constantMap:       make(map[string]int),
 		constantStringMap: make(map[string]int),
 		memoryStack:       make([]FunctionMemorySegment, 0),
+		ConstantMemory:    make([]interface{}, MEMORY_SEGMENT_SIZE),
 		currentSegment:    nil,
 	}
 }
 
+func (mm *MemoryManager) InitializeMemory() {
+	globalFloat := mm.GlobalFloatPtr
+	globalInt := mm.GlobalIntPtr
+	globalSize := globalFloat + globalInt
+
+	tempInt := mm.TempIntPtr
+	tempFloat := mm.TempFloatPtr
+	tempSize := tempInt + tempFloat
+
+	mm.globalMemory = make([]interface{}, globalSize)
+	mm.tempMemory = make([]interface{}, tempSize)
+}
+
 func (mm *MemoryManager) AllocateGlobal(varType shared.Type) (int, error) {
+	fmt.Println("This is the ptr", mm.GlobalIntPtr)
 	switch varType {
 	case shared.TypeInt:
-		if mm.globalIntPtr >= GLOBAL_INT_END {
+		if mm.GlobalIntPtr >= GLOBAL_INT_END {
 			return -1, fmt.Errorf("global integer memory overflow")
 		}
-		addr := mm.globalIntPtr
-		mm.globalIntPtr++
+		addr := mm.GlobalIntPtr
+		mm.GlobalIntPtr++
 		return addr, nil
 	case shared.TypeFloat:
-		if mm.globalFloatPtr >= GLOBAL_FLOAT_END {
+		if mm.GlobalFloatPtr >= GLOBAL_FLOAT_END {
 			return -1, fmt.Errorf("global float memory overflow")
 		}
-		addr := mm.globalFloatPtr
-		mm.globalFloatPtr++
+		addr := mm.GlobalFloatPtr
+		mm.GlobalFloatPtr++
 		return addr, nil
 	default:
 		return -1, fmt.Errorf("unsupported type for global allocation")
@@ -108,18 +123,18 @@ func (mm *MemoryManager) AllocateGlobal(varType shared.Type) (int, error) {
 func (mm *MemoryManager) AllocateTemp(varType shared.Type) (int, error) {
 	switch varType {
 	case shared.TypeInt:
-		if mm.tempIntPtr >= TEMP_INT_END {
+		if mm.TempIntPtr >= TEMP_INT_END {
 			return -1, fmt.Errorf("temporary integer memory overflow")
 		}
-		addr := mm.tempIntPtr
-		mm.tempIntPtr++
+		addr := mm.TempIntPtr
+		mm.TempIntPtr++
 		return addr, nil
 	case shared.TypeFloat:
-		if mm.tempFloatPtr >= TEMP_FLOAT_END {
+		if mm.TempFloatPtr >= TEMP_FLOAT_END {
 			return -1, fmt.Errorf("temporary float memory overflow")
 		}
-		addr := mm.tempFloatPtr
-		mm.tempFloatPtr++
+		addr := mm.TempFloatPtr
+		mm.TempFloatPtr++
 		return addr, nil
 	default:
 		return -1, fmt.Errorf("unsupported type for temporary allocation")
@@ -207,8 +222,9 @@ func (mm *MemoryManager) Store(address int, value interface{}) error {
 	if address < 0 || address >= TOTAL_MEMORY_SIZE {
 		return fmt.Errorf("memory access out of bounds: %d", address)
 	}
+	// fmt.Println("entered here:  with address ", address, "and ", value)
 
-	var segment *[MEMORY_SEGMENT_SIZE]interface{}
+	var segment *[]interface{}
 	var offset int
 
 	if address >= LOCAL_START && address < LOCAL_START+MEMORY_SEGMENT_SIZE {
@@ -236,43 +252,23 @@ func (mm *MemoryManager) Store(address int, value interface{}) error {
 		offset = address - CONSTANT_START
 	case address >= TEMP_START && address < TEMP_START+MEMORY_SEGMENT_SIZE:
 		segment = &mm.tempMemory
-		offset = address - TEMP_START
+		if address >= TEMP_INT_START && address < TEMP_FLOAT_START {
+			offset = address - TEMP_START
+		} else if address >= TEMP_FLOAT_START {
+			offset = address - TEMP_FLOAT_START + mm.TempIntPtr
+		}
 	case address >= GLOBAL_START && address < GLOBAL_START+MEMORY_SEGMENT_SIZE:
 		segment = &mm.globalMemory
-		offset = address - GLOBAL_START
+		if address >= GLOBAL_INT_START && address < GLOBAL_FLOAT_START {
+			offset = address - GLOBAL_START
+		} else if address >= GLOBAL_FLOAT_START {
+			offset = address - GLOBAL_FLOAT_START + mm.GlobalIntPtr
+		}
 	default:
 		return fmt.Errorf("invalid memory address: %d", address)
 	}
 
-	switch {
-	case address >= CONSTANT_STR_START && address <= CONSTANT_STR_END:
-		if _, ok := value.(string); !ok {
-			return fmt.Errorf("type mismatch: expected string at address %d", address)
-		}
-	case (address >= GLOBAL_INT_START && address <= GLOBAL_INT_END) ||
-		(address >= LOCAL_INT_START && address <= LOCAL_INT_END) ||
-		(address >= TEMP_INT_START && address <= TEMP_INT_END) ||
-		(address >= CONSTANT_INT_START && address <= CONSTANT_INT_END):
-
-		if floatVal, ok := value.(float64); ok {
-			value = int(floatVal)
-		}
-		if _, ok := value.(int); !ok {
-			return fmt.Errorf("type mismatch: expected integer at address %d", address)
-		}
-	case (address >= GLOBAL_FLOAT_START && address <= GLOBAL_FLOAT_END) ||
-		(address >= LOCAL_FLOAT_START && address <= LOCAL_FLOAT_END) ||
-		(address >= TEMP_FLOAT_START && address <= TEMP_FLOAT_END) ||
-		(address >= CONSTANT_FLOAT_START && address <= CONSTANT_FLOAT_END):
-
-		if intVal, ok := value.(int); ok {
-			value = float64(intVal)
-		}
-		if _, ok := value.(float64); !ok {
-			return fmt.Errorf("type mismatch: expected float at address %d", address)
-		}
-	}
-	segment[offset] = value
+	(*segment)[offset] = value
 	return nil
 }
 
@@ -281,7 +277,7 @@ func (mm *MemoryManager) Load(address int) (interface{}, error) {
 		return nil, fmt.Errorf("memory access out of bounds: %d", address)
 	}
 
-	var segment *[MEMORY_SEGMENT_SIZE]interface{}
+	var segment *[]interface{}
 	var offset int
 
 	if address >= LOCAL_START && address < LOCAL_START+MEMORY_SEGMENT_SIZE {
@@ -310,15 +306,23 @@ func (mm *MemoryManager) Load(address int) (interface{}, error) {
 		offset = address - CONSTANT_START
 	case address >= TEMP_START && address < TEMP_START+MEMORY_SEGMENT_SIZE:
 		segment = &mm.tempMemory
-		offset = address - TEMP_START
+		if address >= TEMP_INT_START && address < TEMP_FLOAT_START {
+			offset = address - TEMP_START
+		} else if address >= TEMP_FLOAT_START {
+			offset = address - TEMP_FLOAT_START + mm.TempIntPtr
+		}
 	case address >= GLOBAL_START && address < MEMORY_SEGMENT_SIZE:
 		segment = &mm.globalMemory
-		offset = address
+		if address >= GLOBAL_INT_START && address < GLOBAL_FLOAT_START {
+			offset = address - GLOBAL_START
+		} else if address >= GLOBAL_FLOAT_START {
+			offset = address - GLOBAL_FLOAT_START + mm.GlobalIntPtr
+		}
 	default:
 		return nil, fmt.Errorf("invalid memory address: %d", address)
 	}
 
-	value := segment[offset]
+	value := (*segment)[offset]
 	if value == nil {
 		return nil, fmt.Errorf("accessing uninitialized memory at address %d", address)
 	}

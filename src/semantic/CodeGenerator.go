@@ -328,18 +328,27 @@ func (ql *QuadrupleList) HandleEndIf() error {
 	return nil
 }
 
-func (ql *QuadrupleList) HandlePrint(value interface{}) error {
-	if v, ok := value.(string); ok {
-		addr, err := ql.MemoryManager.GetStringAddress(v)
-		if err != nil {
-			return err
+func (ql *QuadrupleList) HandlePrint(items []interface{}) error {
+	addresses := make([]int, len(items))
+
+	for i, item := range items {
+		switch v := item.(type) {
+		case string:
+			addr, err := ql.MemoryManager.GetStringAddress(v)
+			if err != nil {
+				return fmt.Errorf("error allocating string: %v", err)
+			}
+			addresses[i] = addr
+		case int:
+			addresses[i] = v
+		default:
+			return fmt.Errorf("unsupported print item type: %T", item)
 		}
-		value = addr // Assign back to original value variable if needed
 	}
 
 	quad := shared.Quadruple{
 		Operator: "print",
-		LeftOp:   value,
+		LeftOp:   addresses,
 		RightOp:  nil,
 		Result:   nil,
 	}

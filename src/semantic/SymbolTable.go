@@ -216,7 +216,6 @@ func (st *SymbolTable) GetFunctionStartQuad(functionName string) (int, error) {
 //}
 
 func (st *SymbolTable) ValidateVarAssignment(varName string, line int) error {
-	// First check if variable exists
 	if st.variables[st.currentScope] == nil {
 		st.variables[st.currentScope] = make(map[string]interface{})
 	}

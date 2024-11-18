@@ -16,18 +16,22 @@ type VirtualMachine struct {
 }
 
 func NewVirtualMachine(quads []shared.Quadruple, memManager *MemoryManager) *VirtualMachine {
-	return &VirtualMachine{
+	vm := &VirtualMachine{
 		quads:              quads,
 		memoryManager:      memManager,
 		instructionPointer: 0,
 		returnPointer:      shared.NewStack(),
 		Functions:          make(map[string]shared.FunctionInfo),
 	}
+
+	return vm
 }
 
 func (vm *VirtualMachine) Execute() error {
 	//fmt.Println("These are the quads", vm.quads)
 	// fmt.Println("These are the functions", vm.Functions)
+	// vm.memoryManager.InitializeMemory()
+	vm.memoryManager.InitializeMemory()
 	for vm.instructionPointer < len(vm.quads) {
 		quad := vm.quads[vm.instructionPointer]
 
@@ -198,22 +202,29 @@ func (vm *VirtualMachine) executeComparison(quad shared.Quadruple) error {
 }
 
 func (vm *VirtualMachine) executePrint(quad shared.Quadruple) error {
-	value, err := vm.memoryManager.Load(quad.LeftOp.(int))
-	if err != nil {
-		return fmt.Errorf("failed to load print value: %v", err)
-	}
-	switch v := value.(type) {
-	case string:
-		cleanStr := strings.Trim(v, "\"")
-		fmt.Println(cleanStr)
-	case int:
-		fmt.Println(v)
-	case float64:
-		fmt.Println(v)
-	default:
-		return fmt.Errorf("unsupported type for printing: %T", value)
-	}
+	items := quad.LeftOp.([]int)
+	for i, item := range items {
+		value, err := vm.memoryManager.Load(item)
+		if err != nil {
+			return fmt.Errorf("failed to load print value: %v", err)
+		}
 
+		switch v := value.(type) {
+		case string:
+			cleanStr := strings.Trim(v, "\"")
+			fmt.Print(cleanStr, " ")
+		case int:
+			fmt.Print(v, " ")
+		case float64:
+			fmt.Print(v, " ")
+		default:
+			return fmt.Errorf("unsupported type for printing: %T", value)
+		}
+
+		if i == len(items)-1 {
+			fmt.Println()
+		}
+	}
 	return nil
 }
 

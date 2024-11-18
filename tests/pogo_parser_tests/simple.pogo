@@ -1,25 +1,46 @@
-program simple;
+program ComprehensiveTest;
 
-var a, b : int;
+var x, y, z : int;
+var a, b, c : float;
 
-func simpleFunc(v : int, g : int) {
-    print(v, g)
+func testInt(x : int) {
+    var result : int;
+    print(x)
+    print(x * 2 + 5 + 10)
+    result = x + 8;
+    print(result)
+};
+
+func testFloat(f : float, z : float) {
+    var result : float;
+    print(5.0/8)
+    result = f * z + 5 / 8;
+    print(result)
 };
 
 begin
-    a = 5;
-    b = 1;
-    print("Starting nested loop test", a, b)
+    a = 5.4;
+    b = 1.0;
+    c = 2.5;
 
-    while (a > 0) {
-        print("Outer loop: a =", a)
-        while (b < 3) {
-            print("Inner loop: b =", b)
-            b = b + 1;
+    x = 1;
+    y = x+1;
+
+    testInt(x)
+    testInt(8 + 5)
+
+    testFloat(b, c)
+
+    if (x > y) {
+        print("yupi")
+    } else {
+        print("not yupi")
+        while (x < y) {
+            x = x + 1;
+            print(x)
         }
-        a = a - 1;
-        b = 1;  // Reset b for next iteration of outer loop
     }
 
-    print("Loop finished. Final values: a =", a, "b =", b)
+    y = 5 / 8;
+
 end

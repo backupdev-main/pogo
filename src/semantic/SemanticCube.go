@@ -6,7 +6,6 @@ type SemanticCube struct {
 	cube map[shared.Type]map[shared.Type]map[string]shared.Type
 }
 
-// NewSemanticCube initializes the semantic cube for type checking
 func NewSemanticCube() *SemanticCube {
 	cube := &SemanticCube{
 		cube: make(map[shared.Type]map[shared.Type]map[string]shared.Type),
@@ -25,9 +24,9 @@ func NewSemanticCube() *SemanticCube {
 	for _, op := range arithOps {
 		// Int operations
 		cube.cube[shared.TypeInt][shared.TypeInt][op] = shared.TypeInt
-		if op == "/" {
-			cube.cube[shared.TypeInt][shared.TypeInt][op] = shared.TypeFloat
-		}
+		//if op == "/" {
+		//	cube.cube[shared.TypeInt][shared.TypeInt][op] = shared.TypeFloat
+		//}
 		cube.cube[shared.TypeInt][shared.TypeFloat][op] = shared.TypeFloat
 
 		cube.cube[shared.TypeFloat][shared.TypeInt][op] = shared.TypeFloat

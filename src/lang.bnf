@@ -49,7 +49,7 @@ _blockComment : '/' '*' {. | '*'} '*' '/' ;
 
 // === [ Syntax part] =========================================================
 //Program
-//    : ProgramName VarDeclarationSection FunctionListOpt MainSection
+//    : ProgramName VarDeclarationSection FunctionListOpt MainSection <<>>
 //    ;
 //
 //ProgramName

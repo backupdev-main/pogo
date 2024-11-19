@@ -1,46 +1,29 @@
 program ComprehensiveTest;
 
-var x, y, z : int;
-var a, b, c : float;
+var x : int;
 
-func testInt(x : int) {
+func factorial(x : int) {
     var result : int;
-    print(x)
-    print(x * 2 + 5 + 10)
-    result = x + 8;
+    result = 1;
+    while(x > 0) {
+        result = result * x;
+        x = x - 1;
+    }
+
     print(result)
 };
 
-func testFloat(f : float, z : float) {
-    var result : float;
-    print(5.0/8)
-    result = f * z + 5 / 8;
-    print(result)
+func factorial2() {
+    factorial(5)
 };
 
 begin
-    a = 5.4;
-    b = 1.0;
-    c = 2.5;
-
-    x = 1;
-    y = x+1;
-
-    testInt(x)
-    testInt(8 + 5)
-
-    testFloat(b, c)
-
-    if (x > y) {
-        print("yupi")
-    } else {
-        print("not yupi")
-        while (x < y) {
-            x = x + 1;
-            print(x)
-        }
+    factorial(5)
+    factorial2()
+    print("Hellow World")
+    x = 5;
+    while (x > 0) {
+        print("This is x: ", x)
+        x = x - 1;
     }
-
-    y = 5 / 8;
-
 end

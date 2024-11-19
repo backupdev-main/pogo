@@ -334,7 +334,7 @@ func (ql *QuadrupleList) HandlePrint(items []interface{}) error {
 	for i, item := range items {
 		switch v := item.(type) {
 		case string:
-			addr, err := ql.MemoryManager.GetStringAddress(v)
+			addr, err := ql.MemoryManager.AllocateStringAddress(v)
 			if err != nil {
 				return fmt.Errorf("error allocating string: %v", err)
 			}

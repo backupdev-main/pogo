@@ -7,10 +7,10 @@ type SemanticCube struct {
 }
 
 func NewSemanticCube() *SemanticCube {
+
 	cube := &SemanticCube{
 		cube: make(map[shared.Type]map[shared.Type]map[string]shared.Type),
 	}
-
 	// Initialize semantic cube
 	for _, t1 := range []shared.Type{shared.TypeInt, shared.TypeFloat} {
 		cube.cube[t1] = make(map[shared.Type]map[string]shared.Type)
@@ -19,7 +19,6 @@ func NewSemanticCube() *SemanticCube {
 		}
 	}
 
-	// Handle arithmetic operators
 	arithOps := []string{"+", "-", "*", "/"}
 	for _, op := range arithOps {
 		// Int operations
@@ -50,7 +49,6 @@ func NewSemanticCube() *SemanticCube {
 }
 
 func (sc *SemanticCube) GetResultType(t1, t2 shared.Type, operator string) shared.Type {
-	// String operations are not allowed
 	if t1 == shared.TypeString || t2 == shared.TypeString {
 		return shared.TypeError
 	}

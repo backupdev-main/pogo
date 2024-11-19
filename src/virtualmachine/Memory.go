@@ -55,14 +55,13 @@ type MemoryManager struct {
 	TempIntPtr   int
 	TempFloatPtr int
 
-	ConstantMemory   []interface{}
 	constantIntPtr   int
 	constantFloatPtr int
 	constantStrPtr   int
 
 	// map for constant reusing / not restoring the same constant
-	constantMap       map[string]int
-	constantStringMap map[string]int
+	ConstantMapLoad  map[int]interface{}
+	ConstantMapStore map[interface{}]int
 
 	memoryStack    []FunctionMemorySegment
 	currentSegment *FunctionMemorySegment
@@ -70,18 +69,17 @@ type MemoryManager struct {
 
 func NewMemoryManager() *MemoryManager {
 	return &MemoryManager{
-		GlobalIntPtr:      GLOBAL_INT_START,
-		GlobalFloatPtr:    GLOBAL_FLOAT_START,
-		TempIntPtr:        TEMP_INT_START,
-		TempFloatPtr:      TEMP_FLOAT_START,
-		constantIntPtr:    CONSTANT_INT_START,
-		constantFloatPtr:  CONSTANT_FLOAT_START,
-		constantStrPtr:    CONSTANT_STR_START,
-		constantMap:       make(map[string]int),
-		constantStringMap: make(map[string]int),
-		memoryStack:       make([]FunctionMemorySegment, 0),
-		ConstantMemory:    make([]interface{}, MEMORY_SEGMENT_SIZE),
-		currentSegment:    nil,
+		GlobalIntPtr:     GLOBAL_INT_START,
+		GlobalFloatPtr:   GLOBAL_FLOAT_START,
+		TempIntPtr:       TEMP_INT_START,
+		TempFloatPtr:     TEMP_FLOAT_START,
+		constantIntPtr:   CONSTANT_INT_START,
+		constantFloatPtr: CONSTANT_FLOAT_START,
+		constantStrPtr:   CONSTANT_STR_START,
+		ConstantMapLoad:  make(map[int]interface{}),
+		ConstantMapStore: make(map[interface{}]int),
+		memoryStack:      make([]FunctionMemorySegment, 0),
+		currentSegment:   nil,
 	}
 }
 
@@ -99,7 +97,6 @@ func (mm *MemoryManager) InitializeMemory() {
 }
 
 func (mm *MemoryManager) AllocateGlobal(varType shared.Type) (int, error) {
-	fmt.Println("This is the ptr", mm.GlobalIntPtr)
 	switch varType {
 	case shared.TypeInt:
 		if mm.GlobalIntPtr >= GLOBAL_INT_END {
@@ -143,7 +140,7 @@ func (mm *MemoryManager) AllocateTemp(varType shared.Type) (int, error) {
 
 func (mm *MemoryManager) AllocateConstant(value string) (int, error) {
 
-	if addr, exists := mm.constantMap[value]; exists {
+	if addr, exists := mm.ConstantMapStore[value]; exists {
 		return addr, nil
 	}
 
@@ -153,8 +150,8 @@ func (mm *MemoryManager) AllocateConstant(value string) (int, error) {
 		}
 		addr := mm.constantIntPtr
 		// fmt.Println("Allocating value ", intVal, "at ", addr-CONSTANT_START)
-		mm.ConstantMemory[addr-CONSTANT_START] = intVal
-		mm.constantMap[value] = addr
+		mm.ConstantMapLoad[addr-CONSTANT_START] = intVal
+		mm.ConstantMapStore[value] = addr
 		mm.constantIntPtr++
 		return addr, nil
 	}
@@ -164,8 +161,8 @@ func (mm *MemoryManager) AllocateConstant(value string) (int, error) {
 			return -1, fmt.Errorf("constant integer memory overflow")
 		}
 		addr := mm.constantFloatPtr
-		mm.ConstantMemory[addr-CONSTANT_START] = floatVal
-		mm.constantMap[value] = addr
+		mm.ConstantMapLoad[addr-CONSTANT_START] = floatVal
+		mm.ConstantMapStore[value] = addr
 		mm.constantFloatPtr++
 		return addr, nil
 	}
@@ -196,8 +193,8 @@ func (mm *MemoryManager) AllocateLocal(varType shared.Type) (int, error) {
 	}
 }
 
-func (mm *MemoryManager) GetStringAddress(value string) (int, error) {
-	if addr, exists := mm.constantStringMap[value]; exists {
+func (mm *MemoryManager) AllocateStringAddress(value string) (int, error) {
+	if addr, exists := mm.ConstantMapStore[value]; exists {
 		return addr, nil
 	}
 
@@ -208,12 +205,11 @@ func (mm *MemoryManager) GetStringAddress(value string) (int, error) {
 	addr := mm.constantStrPtr
 
 	// Store the string in constant memory
-	// The offset should be relative to CONSTANT_START, not CONSTANT_STR_START
 	offset := addr - CONSTANT_START
-	mm.ConstantMemory[offset] = value
+	mm.ConstantMapLoad[offset] = value
 
 	// Add to map and increment pointer
-	mm.constantStringMap[value] = addr
+	mm.ConstantMapStore[value] = addr
 	mm.constantStrPtr++
 	return addr, nil
 }
@@ -247,9 +243,6 @@ func (mm *MemoryManager) Store(address int, value interface{}) error {
 	}
 
 	switch {
-	case address >= CONSTANT_START && address < CONSTANT_START+MEMORY_SEGMENT_SIZE:
-		segment = &mm.ConstantMemory
-		offset = address - CONSTANT_START
 	case address >= TEMP_START && address < TEMP_START+MEMORY_SEGMENT_SIZE:
 		segment = &mm.tempMemory
 		if address >= TEMP_INT_START && address < TEMP_FLOAT_START {
@@ -302,8 +295,11 @@ func (mm *MemoryManager) Load(address int) (interface{}, error) {
 
 	switch {
 	case address >= CONSTANT_START && address < CONSTANT_START+MEMORY_SEGMENT_SIZE:
-		segment = &mm.ConstantMemory
-		offset = address - CONSTANT_START
+		offset := address - CONSTANT_START
+		if _, exists := mm.ConstantMapLoad[offset]; !exists {
+			return nil, fmt.Errorf("trying to retrieve from uninitialized memory address")
+		}
+		return mm.ConstantMapLoad[offset], nil
 	case address >= TEMP_START && address < TEMP_START+MEMORY_SEGMENT_SIZE:
 		segment = &mm.tempMemory
 		if address >= TEMP_INT_START && address < TEMP_FLOAT_START {

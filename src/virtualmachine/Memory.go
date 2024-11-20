@@ -277,7 +277,7 @@ func (mm *MemoryManager) Load(address int) (interface{}, error) {
 		if address < LOCAL_FLOAT_START {
 			offset = address - LOCAL_START
 		} else {
-			offset = address - LOCAL_FLOAT_START + mm.currentSegment.intVarsCount
+			offset = (address - LOCAL_FLOAT_START) + mm.currentSegment.intVarsCount
 		}
 
 		if mm.currentSegment == nil {

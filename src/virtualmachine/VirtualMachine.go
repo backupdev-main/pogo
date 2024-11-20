@@ -12,7 +12,7 @@ type VirtualMachine struct {
 	Functions          map[string]shared.FunctionInfo
 	instructionPointer int
 	returnPointer      *shared.Stack
-	currFunction       string
+	functionStack      *shared.Stack
 }
 
 func NewVirtualMachine(quads []shared.Quadruple, memManager *MemoryManager) *VirtualMachine {
@@ -21,6 +21,7 @@ func NewVirtualMachine(quads []shared.Quadruple, memManager *MemoryManager) *Vir
 		memoryManager:      memManager,
 		instructionPointer: 0,
 		returnPointer:      shared.NewStack(),
+		functionStack:      shared.NewStack(),
 		Functions:          make(map[string]shared.FunctionInfo),
 	}
 
@@ -248,29 +249,41 @@ func (vm *VirtualMachine) executeGotoF(quad shared.Quadruple) error {
 
 func (vm *VirtualMachine) executeParam(quad shared.Quadruple) error {
 	valueAddr := quad.LeftOp.(int)
+
+	if err := vm.memoryManager.PopFunctionSegment(); err != nil {
+		return err
+	}
+	currentFunction := vm.functionStack.Pop()
+
 	value, err := vm.memoryManager.Load(valueAddr)
 	if err != nil {
 		return err
 	}
 
-	function, exists := vm.Functions[vm.currFunction]
+	vm.functionStack.Push(currentFunction)
+	function, exists := vm.Functions[currentFunction.(string)]
 	if exists {
-		index := quad.RightOp.(int)
-		currParam := function.Parameters[index]
-		currParamAddr := currParam.Address
-		if err := vm.memoryManager.Store(currParamAddr, value); err != nil {
-			return err
-		}
+		vm.memoryManager.PushNewFunctionSegment(false, function.IntVarsCount, function.FloatVarsCount)
 	} else {
 		return fmt.Errorf("function does not exist")
 	}
+
+	index := quad.RightOp.(int)
+	currParam := function.Parameters[index]
+	currParamAddr := currParam.Address
+	if err := vm.memoryManager.Store(currParamAddr, value); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (vm *VirtualMachine) executeEra(quad shared.Quadruple) error {
 	functionName := quad.LeftOp.(string)
-	vm.currFunction = functionName
+	vm.functionStack.Push(functionName)
 	functionInfo, exists := vm.Functions[functionName]
+	fmt.Println("This is the functionInfo", functionInfo)
+	fmt.Println("These are the counts", functionInfo.IntVarsCount, functionInfo.FloatVarsCount)
 	if exists {
 		vm.memoryManager.PushNewFunctionSegment(false, functionInfo.IntVarsCount, functionInfo.FloatVarsCount)
 	} else {
@@ -281,6 +294,7 @@ func (vm *VirtualMachine) executeEra(quad shared.Quadruple) error {
 
 func (vm *VirtualMachine) executeEndproc(quad shared.Quadruple) error {
 	vm.instructionPointer = vm.returnPointer.Pop().(int)
+	vm.functionStack.Pop()
 	if err := vm.memoryManager.PopFunctionSegment(); err != nil {
 		return err
 	}

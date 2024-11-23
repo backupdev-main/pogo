@@ -1,16 +1,19 @@
-program ComprehensiveTest;
+program Factorial;
 
+var result : float;
 var x : int;
 
-func factorial(num : int) {
-     if (num > 5) {
-            print(num)
-            num = num - 1;
-            factorial(num)
-      }
-};
-
-
 begin
-    factorial(7)
+    // Comments work as well!!!!
+    /*
+        multiline comments also work!
+        look!
+    */
+    result = 1;
+    x = 5;
+    while (x > 0) {
+        result = result * x;
+        x = x - 1;
+    }
+    print("This is the result", result)
 end

@@ -11,7 +11,8 @@ import (
 
 func TestParser(t *testing.T) {
 	fmt.Println("Test Pogo Parser")
-	inputFile := "simple.pogo"
+	inputFile := os.Args[len(os.Args)-1]
+	//inputFile := "simple.pogo"
 	input, err := os.ReadFile(inputFile)
 
 	if err != nil {
@@ -25,8 +26,6 @@ func TestParser(t *testing.T) {
 	if err != nil {
 		fmt.Println("Parse error:", err)
 		return
-	} else {
-		fmt.Println("Input successfully parsed!")
 	}
 
 	if err := storer.SaveCompiledData(p.CodeGenerator.Quads, p.SymbolTable, p.CodeGenerator.MemoryManager, "test.pbin"); err != nil {
@@ -35,21 +34,15 @@ func TestParser(t *testing.T) {
 	}
 
 	vm, err := storer.LoadCompiledData("test.pbin")
-	// fmt.Println(vm)
 	if err := vm.Execute(); err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	//virtualMachine := virtualmachine.NewVirtualMachine(p.CodeGenerator.Quads, p.CodeGenerator.MemoryManager)
-	//if err := virtualMachine.Execute(); err != nil {
-	//	fmt.Println("Error during execution", err)
-	//}
 }
 
-//func TestSimpleParser(t *testing.T) {
+//func TestParserFibo(t *testing.T) {
 //	fmt.Println("Test Pogo Parser")
-//	inputFile := "simple.pogo"
+//	inputFile := "fibo.pogo"
 //	input, err := os.ReadFile(inputFile)
 //
 //	if err != nil {
@@ -62,7 +55,21 @@ func TestParser(t *testing.T) {
 //	err = p.ParseProgram()
 //	if err != nil {
 //		fmt.Println("Parse error:", err)
+//		return
 //	} else {
 //		fmt.Println("Input successfully parsed!")
 //	}
+//
+//	if err := storer.SaveCompiledData(p.CodeGenerator.Quads, p.SymbolTable, p.CodeGenerator.MemoryManager, "test.pbin"); err != nil {
+//		fmt.Println(err)
+//		return
+//	}
+//
+//	vm, err := storer.LoadCompiledData("test.pbin")
+//	// fmt.Println(vm)
+//	if err := vm.Execute(); err != nil {
+//		fmt.Println(err)
+//		return
+//	}
+//
 //}

@@ -139,7 +139,6 @@ func (mm *MemoryManager) AllocateTemp(varType shared.Type) (int, error) {
 }
 
 func (mm *MemoryManager) AllocateConstant(value string) (int, error) {
-
 	if addr, exists := mm.ConstantMapStore[value]; exists {
 		return addr, nil
 	}
@@ -166,7 +165,7 @@ func (mm *MemoryManager) AllocateConstant(value string) (int, error) {
 		mm.constantFloatPtr++
 		return addr, nil
 	}
-	fmt.Println("Returning -1 for", value)
+
 	return -1, fmt.Errorf("invalid constant value: %s", value)
 }
 

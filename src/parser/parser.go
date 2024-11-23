@@ -21,7 +21,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 		SymbolTable:   semantic.NewSymbolTable(),
 		CodeGenerator: semantic.NewQuadrupleList(),
 	}
-	p.next() // prime first token
+	p.next()
 	return p
 }
 
@@ -44,8 +44,8 @@ func (p *Parser) ParseProgram() error {
 		return err
 	}
 	// p.SymbolTable.PrettyPrint()
-	p.CodeGenerator.Print()
-	p.CodeGenerator.PrintStacks()
+	//p.CodeGenerator.Print()
+	//p.CodeGenerator.PrintStacks()
 
 	return nil
 }
@@ -667,7 +667,7 @@ func (p *Parser) parseExpression() (shared.Type, error) {
 		return shared.TypeError, err
 	}
 
-	if p.curr.Type == token.TokMap.Type("relOp") {
+	for p.curr.Type == token.TokMap.Type("relOp") {
 		operator := string(p.curr.Lit)
 		p.CodeGenerator.OperatorStack.Push(operator)
 		p.next()
@@ -680,8 +680,6 @@ func (p *Parser) parseExpression() (shared.Type, error) {
 		if err := p.CodeGenerator.HandleOp(); err != nil {
 			return shared.TypeError, err
 		}
-
-		return shared.TypeInt, nil
 	}
 
 	return leftType, nil
@@ -818,6 +816,7 @@ func (p *Parser) parseFactor() (shared.Type, error) {
 	case token.TokMap.Type("id"), token.TokMap.Type("intLit"), token.TokMap.Type("floatLit"):
 		tok := p.curr
 		tokType, err := p.getType(tok)
+		// fmt.Printf("In Parser parseFactor: token=%v type=%v lit=%v\n", p.curr.Type, tokType, string(tok.Lit))
 		if err != nil {
 			return shared.TypeError, err
 		}

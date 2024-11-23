@@ -86,54 +86,53 @@ func (vm *VirtualMachine) executeArithmetic(quad shared.Quadruple) error {
 	}
 
 	var result interface{}
+	var leftFloat, rightFloat float64
+	isFloatOperation := false
 
-	switch left := leftVal.(type) {
+	switch l := leftVal.(type) {
 	case int:
-		right, ok := rightVal.(int)
-		if !ok {
-			return fmt.Errorf("type mismatch: cannot perform integer operation with %T", rightVal)
-		}
-
-		switch quad.Operator {
-		case "+":
-			result = left + right
-		case "-":
-			result = left - right
-		case "*":
-			result = left * right
-		case "/":
-			if right == 0 {
-				return fmt.Errorf("division by zero")
-			}
-			result = left / right
-		}
-
+		leftFloat = float64(l)
 	case float64:
-		var right float64
-		switch r := rightVal.(type) {
-		case float64:
-			right = r
-		case int:
-			right = float64(r)
-		default:
-			return fmt.Errorf("type mismatch: cannot perform float operation with %T", rightVal)
-		}
-
-		switch quad.Operator {
-		case "+":
-			result = left + right
-		case "-":
-			result = left - right
-		case "*":
-			result = left * right
-		case "/":
-			if right == 0 {
-				return fmt.Errorf("division by zero")
-			}
-			result = left / right
-		}
+		leftFloat = l
+		isFloatOperation = true
+	default:
+		return fmt.Errorf("invalid left operand type: %T", leftVal)
 	}
-	// Store result in memory
+
+	switch r := rightVal.(type) {
+	case int:
+		rightFloat = float64(r)
+	case float64:
+		rightFloat = r
+		isFloatOperation = true
+	default:
+		return fmt.Errorf("invalid right operand type: %T", rightVal)
+	}
+
+	var floatResult float64
+	switch quad.Operator {
+	case "+":
+		floatResult = leftFloat + rightFloat
+	case "-":
+		floatResult = leftFloat - rightFloat
+	case "*":
+		floatResult = leftFloat * rightFloat
+	case "/":
+		if rightFloat == 0 {
+			return fmt.Errorf("division by zero")
+		}
+		floatResult = leftFloat / rightFloat
+		isFloatOperation = true // Division always returns float
+	default:
+		return fmt.Errorf("unknown arithmetic operator: %s", quad.Operator)
+	}
+
+	if isFloatOperation {
+		result = floatResult
+	} else {
+		result = int(floatResult)
+	}
+
 	return vm.memoryManager.Store(quad.Result.(int), result)
 }
 
@@ -142,6 +141,7 @@ func (vm *VirtualMachine) executeAssignment(quad shared.Quadruple) error {
 	if err != nil {
 		return fmt.Errorf("failed to load source value: %v", err)
 	}
+
 	return vm.memoryManager.Store(quad.Result.(int), value)
 }
 
@@ -217,7 +217,7 @@ func (vm *VirtualMachine) executePrint(quad shared.Quadruple) error {
 		case int:
 			fmt.Print(v, " ")
 		case float64:
-			fmt.Print(v, " ")
+			fmt.Printf("%.2f ", v)
 		default:
 			return fmt.Errorf("unsupported type for printing: %T", value)
 		}
@@ -282,8 +282,8 @@ func (vm *VirtualMachine) executeEra(quad shared.Quadruple) error {
 	functionName := quad.LeftOp.(string)
 	vm.functionStack.Push(functionName)
 	functionInfo, exists := vm.Functions[functionName]
-	fmt.Println("This is the functionInfo", functionInfo)
-	fmt.Println("These are the counts", functionInfo.IntVarsCount, functionInfo.FloatVarsCount)
+	//fmt.Println("This is the functionInfo", functionInfo)
+	//fmt.Println("These are the counts", functionInfo.IntVarsCount, functionInfo.FloatVarsCount)
 	if exists {
 		vm.memoryManager.PushNewFunctionSegment(false, functionInfo.IntVarsCount, functionInfo.FloatVarsCount)
 	} else {

@@ -55,7 +55,6 @@ func (st *SymbolTable) GetVariableAddress(name string) (int, error) {
 
 	value, exists := st.variables[st.currentScope][name]
 	if exists {
-		// then we should look for the value in global scope
 		if v, ok := value.(shared.Variable); ok {
 			return v.Address, nil
 		}

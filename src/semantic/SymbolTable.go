@@ -182,7 +182,6 @@ func (st *SymbolTable) UpdateFunctionStartQuad(functionName string, start int) e
 
 func (st *SymbolTable) GetFunctionStartQuad(functionName string) (int, error) {
 	function, ok := st.variables["global"][functionName].(shared.Function)
-	fmt.Println("Function Name", functionName, function)
 	if !ok {
 		return -1, fmt.Errorf("function %s not found", functionName)
 	}
